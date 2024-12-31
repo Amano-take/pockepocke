@@ -9,7 +9,7 @@ class TamaTama(PockemonCard):
     retreat_cost = 1
     class ChottoSeityou(PockemonAttack):
         damage = 0
-        RequiredEnergy = RequiredEnergy([], 1)
+        required_energy = RequiredEnergy([], 1)
         
-    attacks = [ChottoSeityou]
+    attacks = [ChottoSeityou()]
     

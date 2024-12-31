@@ -26,7 +26,7 @@ class PockemonAttack:
         self.damage = self.__class__.damage
         self.required_energy :RequiredEnergy = self.__class__.required_energy
         
-    def can_attack(self, energies: AttachedEnergies):
+    def can_attack_hidden(self, energies: AttachedEnergies):
         for i in range(len(Energy)):
             if self.required_energy.energies[i] > energies.energies[i]:
                 return False
@@ -39,6 +39,9 @@ class PockemonAttack:
     def other_effect(self, game: Game):
         pass
     
+    def can_attack(self):
+        pass
+    
     
 class PockemonCard:
     def __init__(self):
@@ -49,6 +52,12 @@ class PockemonCard:
         self.hp = self.__class__.hp
         self.type = self.__class__.type
         self.weakness = self.__class__.weakness
-        self.attacks = self.__class__.attacks
+        self.attacks: list[PockemonAttack] = self.__class__.attacks
         self.retreat_cost = self.__class__.retreat_cost
+        
+        # can_attackを自動設定
+        for attack in self.attacks:
+            def can_attack():
+                return attack.can_attack_hidden(self.energies)
+            attack.can_attack = can_attack
         

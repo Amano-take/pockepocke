@@ -1,5 +1,20 @@
 # ポケポケプロジェクト
 
+## カード追加方法
+
+1. クラス名をポケモンの名前にしたクラスを作成。次の要素を必ず含めること
+    - hp
+    - type
+    - weakness
+    - retreat_cost
+    - attacks
+1. attacksの設定を行う。これはPockemonAttackを継承し次の要素を含めること。
+    - damage
+    - required_energy
+
+> 注意  
+PockemonAttackを継承したクラスをインスタンス化してattacksの配列の一部に含めること
+
 ## 各処理
 エナジーは配列で処理する。
 
