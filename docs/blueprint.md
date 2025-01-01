@@ -8,6 +8,7 @@
     - weakness
     - retreat_cost
     - attacks
+    - next_pockemon, previous_pockemon
 1. attacksの設定を行う。これはPockemonAttackを継承し次の要素を含めること。
     - damage
     - required_energy
