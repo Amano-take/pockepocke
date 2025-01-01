@@ -1,7 +1,8 @@
+from __future__ import annotations
+
 from enum import Enum
 from game.energy import Energy, AttachedEnergies, RequiredEnergy
 from game.cards.base_card import Card
-from game.game import Game
 
 
 class PockemonType(Enum):
@@ -90,3 +91,10 @@ class PockemonCard(Card):
                 return attack.can_attack_hidden(self.energies)
 
             attack.can_attack = can_attack
+
+    def __str__(self):
+        return self.name
+
+
+if __name__ == "__main__":
+    from game.game import Game
