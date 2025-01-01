@@ -2,6 +2,7 @@ from __future__ import annotations
 import game.utils
 import logging
 import random
+from itertools import combinations
 
 from game.deck import Deck
 from game.energy import Energy
@@ -15,7 +16,7 @@ class Player:
     def __init__(self, deck: Deck, energies: list[Energy]):
         self.deck = deck
         self.energy_candidates = energies
-        self.hand_pockemon = []
+        self.hand_pockemon: list[PockemonCard] = []
         self.hand_goods = []
         self.hand_trainer = []
         self.bench = []
@@ -57,6 +58,35 @@ class Player:
                 candidates[len(candidates)] = i
         i = self.select_action(selection)
         self.active_pockemon = self.hand_pockemon.pop(candidates[i])
+
+        selection_list = []
+        for i, card in enumerate(self.hand_pockemon):
+            assert isinstance(card, PockemonCard)
+            if card.is_seed:
+                selection_list.append(i)
+
+        selection = {}
+        candidates = {}
+        manage_duplicates = set()
+        for i in range(1, min(3, len(selection_list)) + 1):
+            for comb in combinations(selection_list, i):
+                if tuple([self.hand_pockemon[j].name for j in comb]) in manage_duplicates:
+                    continue
+                manage_duplicates.add(tuple([self.hand_pockemon[j].name for j in comb]))
+                selection[len(selection)] = f"{[self.hand_pockemon[j].name for j in comb]}をベンチに出す"
+                candidates[len(candidates)] = comb
+
+        i = self.select_action(selection)
+        for j in candidates[i]:
+            self.bench.append(self.hand_pockemon[j])
+
+        # comb番目を手札から削除
+        for j in sorted(candidates[i], reverse=True):
+            self.hand_pockemon.pop(j)
+
+        logger.debug(f"{self}が{self.active_pockemon}をアクティブに出した")
+        logger.debug(f"{self}が{self.bench}をベンチに出した")
+        logger.debug(f"手札ポケモン: {self.hand_pockemon}")
 
     def attach_energy(self, card: PockemonCard):
         card.energies.attach_energy(self.current_energy)
