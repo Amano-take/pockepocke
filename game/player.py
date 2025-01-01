@@ -1,9 +1,10 @@
+from __future__ import annotations
 import logging
 import random
 
 from game.deck import Deck
 from game.energy import Energy
-from game.cards.pockemon_card import PockemonCard
+
 
 logger = logging.getLogger(__name__)
 
@@ -24,6 +25,7 @@ class Player:
         return "プレイヤー" + str(random.randint(1, 100))
 
     def draw(self, number: int = 1):
+
         for _ in range(number):
             if len(self.deck.cards) == 0:
                 logger.info("デッキが空です")
@@ -57,3 +59,9 @@ class Player:
         i = random.randint(0, len(self.energy_candidates) - 1)
         logger.debug(f"{self}が{self.energy_candidates[i]}を手に入れた")
         self.current_energy = self.energy_candidates[i]
+
+
+if __name__ == "__main__":
+    from game.deck import Deck
+    from game.energy import Energy
+    from game.cards.pockemon_card import PockemonCard

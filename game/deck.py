@@ -1,19 +1,21 @@
 import random
 
 from game.cards.base_card import Card
-from game.cards.pockemon_card import PockemonCard
+
 
 class Deck:
     def __init__(self, cards: list[Card]):
         self.cards = cards
-        
+
     def draw(self):
         return self.cards.pop(0)
-    
+
     def shuffle(self):
         random.shuffle(self.cards)
-        
+
     def init_deck(self):
+        from game.cards.pockemon_card import PockemonCard  # Moved import here
+
         # デッキに少なくともシードポケモンが一枚あるようにする
         while True:
             self.shuffle()
@@ -25,15 +27,10 @@ class Deck:
             else:
                 continue
             break
-        
-        
+
     def validate(self):
         assert len(self.cards) == 20
         for card in self.cards:
             assert isinstance(card, Card)
-            
+
         # TODO: 各クラスのカードが2枚までかどうか
-        
-        
-    
-        
