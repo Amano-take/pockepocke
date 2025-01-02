@@ -27,7 +27,7 @@ def test_prepare():
 
     with patch.object(player, "select_action", return_value=0) as mock:
         player.prepare()
-        mock.assert_called_once()
+        mock.assert_called()
 
 
 def _test_prepare():

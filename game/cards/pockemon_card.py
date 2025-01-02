@@ -98,6 +98,9 @@ class PockemonCard(Card):
     def __repr__(self):
         return self.name
 
+    def attach_energy(self, energy: Energy):
+        self.energies.attach_energy(energy)
+
 
 if __name__ == "__main__":
     from game.game import Game

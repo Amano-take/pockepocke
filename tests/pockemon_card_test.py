@@ -36,6 +36,12 @@ def test_selevi():
     assert selevi.is_seed == True
     assert selevi.is_ex == True
 
+    selevi.attach_energy(Energy.GRASS)
+    assert selevi.attacks[0].can_attack() == False
+    Energy.GRASS.count = 2
+    assert selevi.attacks[0].can_attack() == True
+    Energy.GRASS.count = 1
+
 
 if __name__ == "__main__":
     test_tama_tama()
