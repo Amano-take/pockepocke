@@ -31,5 +31,5 @@ def test_init_deck():
 
 
 if __name__ == "__main__":
-    deck_draw_test()
+    test_init_deck()
     print("deck_draw_test passed")

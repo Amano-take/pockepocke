@@ -43,6 +43,7 @@ class Player:
         logger.debug(f"手札グッズ: {self.hand_goods}")
         logger.debug(f"手札トレーナー: {self.hand_trainer}")
 
+    # 準備ターンの行動
     def prepare(self):
         # active_pockemonを選ぶ
         selection = {}
@@ -88,8 +89,14 @@ class Player:
         logger.debug(f"{self}が{self.bench}をベンチに出した")
         logger.debug(f"手札ポケモン: {self.hand_pockemon}")
 
+    # 通常ターンの行動
+    def start_turn(self):
+        # TODO: 行動順の仮定を行う必要がある
+        pass
+
+    # エネルギーをつける
     def attach_energy(self, card: PockemonCard):
-        card.energies.attach_energy(self.current_energy)
+        card.attach_energy(self.current_energy)
         logger.debug(f"{self}が{self.current_energy}を{card}につけた")
         self.current_energy = None
 
