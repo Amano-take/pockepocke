@@ -1,0 +1,14 @@
+プレイヤー66
+sides: 0
+current_energy: None
+energy_value: [1, 1, 1, 1, 1, 1, 1, 1]
+hand: [Speeder, MonsterBall], [Tsutaja, Tsutaja], []
+bench: []
+active: Tsutaja
+--------------------
+sides: 0
+current_energy: None
+energy_value: [1, 1, 1, 1, 1, 1, 1, 1]
+hand: [KizuGusuri], [TamaTama, Tsutaja, Tsutaja, Tsutaja], []
+bench: []
+active: None
