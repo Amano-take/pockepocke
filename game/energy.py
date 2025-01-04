@@ -44,9 +44,12 @@ class AttachedEnergies:
         return sum(self.energies[key] * self.energy_values[key] for key in range(len(self.energies)))
 
     def __str__(self):
+        ret = ""
         for energy in Energy:
             if self.energies[energy.value] > 0:
-                print(f"{energy}: {self.energies[energy.value]}")
+                ret += f"{energy}: {self.energies[energy.value]}\n"
+
+        return ret
 
     def __repr__(self):
         return self.__str__()

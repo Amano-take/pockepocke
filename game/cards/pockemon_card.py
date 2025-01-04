@@ -126,6 +126,32 @@ class PockemonCard(Card):
         self.game.active_player.hand_pockemon.remove(self)
         return
 
+    def __str__(self):
+        ret = (
+            "name: "
+            + self.name
+            + "   "
+            + "hp: "
+            + str(self.hp)
+            + "   "
+            + "type: "
+            + str(self.type)
+            + "   "
+            + "weakness: "
+            + str(self.weakness)
+            + "   "
+            + "retreat_cost: "
+            + str(self.retreat_cost)
+            + "   "
+            + "attached_energies: "
+            + str(self.energies)
+            + "\n"
+        )
+        return ret
+
+    def __repr__(self):
+        return str(self)
+
 
 if __name__ == "__main__":
     from game.game import Game

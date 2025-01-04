@@ -1,14 +1,23 @@
-プレイヤー66
+プレイヤー38
 sides: 0
 current_energy: None
 energy_value: [1, 1, 1, 1, 1, 1, 1, 1]
-hand: [Speeder, MonsterBall], [Tsutaja, Tsutaja], []
-bench: []
-active: Tsutaja
+hand: [], [name: Tsutaja   hp: 70   type: grass   weakness: fire   retreat_cost: 1   attached_energies: 
+, name: Tsutaja   hp: 70   type: grass   weakness: fire   retreat_cost: 1   attached_energies: 
+], []
+bench: [name: Tsutaja   hp: 70   type: grass   weakness: fire   retreat_cost: 1   attached_energies: 
+, name: Tsutaja   hp: 70   type: grass   weakness: fire   retreat_cost: 1   attached_energies: 
+, name: Tsutaja   hp: 70   type: grass   weakness: fire   retreat_cost: 1   attached_energies: 
+]
+active: name: Tsutaja   hp: 70   type: grass   weakness: fire   retreat_cost: 1   attached_energies: 
+
 --------------------
 sides: 0
 current_energy: None
 energy_value: [1, 1, 1, 1, 1, 1, 1, 1]
-hand: [KizuGusuri], [TamaTama, Tsutaja, Tsutaja, Tsutaja], []
-bench: []
-active: None
+hand: [KizuGusuri, Speeder], [], []
+bench: [name: Tsutaja   hp: 70   type: grass   weakness: fire   retreat_cost: 1   attached_energies: 
+, name: Tsutaja   hp: 70   type: grass   weakness: fire   retreat_cost: 1   attached_energies: 
+]
+active: name: TamaTama   hp: 50   type: grass   weakness: fire   retreat_cost: 1   attached_energies: 
+

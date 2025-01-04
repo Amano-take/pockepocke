@@ -79,7 +79,7 @@ class Player:
         selection = {}
         candidates = {}
         manage_duplicates = set()
-        for i in range(1, min(3, len(selection_list)) + 1):
+        for i in range(0, min(3, len(selection_list)) + 1):
             for comb in combinations(selection_list, i):
                 if tuple(sorted([self.hand_pockemon[j].name for j in comb])) in manage_duplicates:
                     continue

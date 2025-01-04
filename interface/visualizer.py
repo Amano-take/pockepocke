@@ -33,6 +33,7 @@ class Visualizer:
                 f.write("active: " + str(self.game.player1.active_pockemon) + "\n")
 
                 f.write("--------------------\n")
+                f.write(str(self.game.player2) + "\n")
                 f.write("sides: " + str(self.game.player2.sides) + "\n")
                 f.write("current_energy: " + str(self.game.player2.current_energy) + "\n")
                 f.write("energy_value: " + str(self.game.player2.energy_values) + "\n")
