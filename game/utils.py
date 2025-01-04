@@ -1,5 +1,5 @@
 import logging
-
+import random
 
 def setup_logging():
     logging.basicConfig(
@@ -8,5 +8,8 @@ def setup_logging():
         handlers=[logging.StreamHandler()],  # logging.FileHandler("app.log")],  # コンソール出力  # ファイル出力
     )
 
-
 setup_logging()
+
+
+def coin_toss():
+    return random.choice([True, False])

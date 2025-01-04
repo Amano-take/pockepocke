@@ -31,7 +31,7 @@ class Game:
         # 準備フェーズ
         self.player1.deck.init_deck()
         self.player2.deck.init_deck()
-        self.player1.draw(5)
+        self.player1.dratw(5)
         self.player2.draw(5)
         self.player1.prepare()
         self.player2.prepare()

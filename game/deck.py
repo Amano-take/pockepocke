@@ -11,6 +11,9 @@ class Deck:
     def draw(self):
         return self.cards.pop(0)
 
+    def extend_last(self, card: Card):
+        self.cards.append(card)
+
     def draw_seed_pockemon(self):
         for card in self.cards:
             if isinstance(card, PockemonCard):

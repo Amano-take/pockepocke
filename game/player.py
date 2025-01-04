@@ -26,6 +26,7 @@ class Player:
         self.active_pockemon = None
         self.sides = 0
         self.current_energy = None
+        self.trash = []
         # ターンを終わったときの処理
         self.processes_at_end_of_turn = []
 
@@ -49,9 +50,6 @@ class Player:
                 # TODO: トレーナーの場合
                 pass
         logger.debug(f"{self}が{number}枚引いた")
-        logger.debug(f"手札ポケモン: {self.hand_pockemon}")
-        logger.debug(f"手札グッズ: {self.hand_goods}")
-        logger.debug(f"手札トレーナー: {self.hand_trainer}")
 
     # 準備ターンの行動
     def prepare(self):
@@ -130,7 +128,6 @@ class Player:
             if card.name == "MonsterBall":
                 card.use(self.game)
                 logger.debug(f"{self}が{card}を使った")
-                logger.debug(f"手札ポケモン: {self.hand_pockemon}")
             else:
                 goods_cards.append(card)
 
@@ -152,6 +149,7 @@ class Player:
         i = self.select_action(selection)
         for card in candidates[i]:
             card.use(self.game)
+            logger.debug(f"{self}が{card}を使った")
 
     def use_trainer(self):
         pass
