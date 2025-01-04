@@ -1,3 +1,4 @@
+from __future__ import annotations
 from enum import Enum
 
 
@@ -11,20 +12,6 @@ class Energy(Enum):
     DARKNESS = 6
     METAL = 7
 
-    def __new__(cls, value):
-        obj = object.__new__(cls)
-        obj._value_ = value
-        obj._count = 1
-        return obj
-
-    @property
-    def count(self):
-        return self._count
-
-    @count.setter
-    def count(self, value):
-        self._count = value
-
     def __str__(self):
         return self.name.lower()
 
@@ -33,8 +20,12 @@ class Energy(Enum):
 
 
 class AttachedEnergies:
-    def __init__(self):
+    def __init__(self, player: Player = None):
         self.energies = [0] * len(Energy)
+        if player:
+            self.energy_values = player.energy_values
+        else:
+            self.energy_values = [1] * len(Energy)
 
     def attach_energy(self, energy: Energy):
         self.energies[energy.value] += 1
@@ -47,10 +38,10 @@ class AttachedEnergies:
 
     # AttachedEnergiesインスタンスに対して[i]でアクセスできるように
     def __getitem__(self, key):
-        return self.energies[key] * Energy(key).count
+        return self.energies[key] * self.energy_values[key]
 
     def get_sum(self):
-        return sum(self.energies[key] * Energy(key).count for key in range(len(self.energies)))
+        return sum(self.energies[key] * self.energy_values[key] for key in range(len(self.energies)))
 
     def __str__(self):
         for energy in Energy:
@@ -58,7 +49,7 @@ class AttachedEnergies:
                 print(f"{energy}: {self.energies[energy.value]}")
 
     def __repr__(self):
-        return str(self.energies)
+        return self.__str__()
 
 
 class RequiredEnergy:
@@ -67,3 +58,7 @@ class RequiredEnergy:
         for energy in energies:
             self.energies[energy.value] += 1
         self.number_any_energy = number_any_energy
+
+
+if __name__ == "__main__":
+    from game.player import Player

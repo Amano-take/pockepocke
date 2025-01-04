@@ -1,14 +1,26 @@
 import random
 
 from game.cards.base_card import Card
+from game.cards.pockemon_card import PockemonCard
 
 
 class Deck:
     def __init__(self, cards: list[Card]):
-        self.cards = cards
+        self.cards = cards[:]
 
     def draw(self):
         return self.cards.pop(0)
+
+    def draw_seed_pockemon(self):
+        for card in self.cards:
+            if isinstance(card, PockemonCard):
+                if card.is_seed:
+                    # TODO: 化石ポケモンをのぞく処理をする
+                    return_card = card
+                    self.cards.remove(card)
+                    self.shuffle()
+                    return return_card
+        return None
 
     def shuffle(self):
         random.shuffle(self.cards)

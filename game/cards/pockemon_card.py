@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import copy
 from enum import Enum
 from game.energy import Energy, AttachedEnergies, RequiredEnergy
 from game.cards.base_card import Card
@@ -48,20 +49,20 @@ class PockemonAttack:
         pass
 
     def attack(self, game: Game):
-
-        self.other_effect()
+        self.other_effect(game)
 
 
 class PockemonCard(Card):
-    def __init__(self):
+    def __init__(self, player: Player = None, game: Game = None):
         self.name = self.__class__.__name__
-        self.energies = AttachedEnergies()
+        self.energies = AttachedEnergies(player)
+        self.game = game
 
         # 以下設定が必要
         self.hp = self.__class__.hp
         self.type = self.__class__.type
         self.weakness = self.__class__.weakness
-        self.attacks: list[PockemonAttack] = self.__class__.attacks
+        self.attacks: list[PockemonAttack] = copy.deepcopy(self.__class__.attacks)
         self.retreat_cost = self.__class__.retreat_cost
         if hasattr(self.__class__, "previous_pockemon"):
             self.previous_pockemon = self.__class__.previous_pockemon
@@ -101,6 +102,31 @@ class PockemonCard(Card):
     def attach_energy(self, energy: Energy):
         self.energies.attach_energy(energy)
 
+    def detach_energy(self, energy: Energy):
+        self.energies.detach_energy(energy)
+
+    def get_damage(self, damage: int):
+        self.hp -= damage
+        if self.hp > 0:
+            return
+
+    def enter_battle(self):
+        pass
+
+    def leave_battle(self):
+        pass
+
+    def use_to_active(self):
+        self.game.active_player.active_pockemon = self
+        self.game.active_player.hand_pockemon.remove(self)
+        return
+
+    def use_to_bench(self):
+        self.game.active_player.bench.append(self)
+        self.game.active_player.hand_pockemon.remove(self)
+        return
+
 
 if __name__ == "__main__":
     from game.game import Game
+    from game.player import Player

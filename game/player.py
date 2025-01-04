@@ -7,6 +7,7 @@ from itertools import combinations
 from game.deck import Deck
 from game.energy import Energy
 from game.cards.pockemon_card import PockemonCard
+from game.cards.goods_cards.goods import GoodsCard
 
 
 logger = logging.getLogger(__name__)
@@ -14,18 +15,25 @@ logger = logging.getLogger(__name__)
 
 class Player:
     def __init__(self, deck: Deck, energies: list[Energy]):
+        self.name = "プレイヤー" + str(random.randint(1, 100))
         self.deck = deck
         self.energy_candidates = energies
+        self.energy_values = [1] * len(Energy)
         self.hand_pockemon: list[PockemonCard] = []
-        self.hand_goods = []
+        self.hand_goods: list[GoodsCard] = []
         self.hand_trainer = []
-        self.bench = []
+        self.bench: list[PockemonCard] = []
         self.active_pockemon = None
         self.sides = 0
         self.current_energy = None
+        # ターンを終わったときの処理
+        self.processes_at_end_of_turn = []
 
     def __str__(self):
-        return "プレイヤー" + str(random.randint(1, 100))
+        return self.name
+
+    def set_game(self, game: Game):
+        self.game = game
 
     def draw(self, number: int = 1):
         for _ in range(number):
@@ -35,8 +43,10 @@ class Player:
             card = self.deck.draw()
             if isinstance(card, PockemonCard):
                 self.hand_pockemon.append(card)
+            elif isinstance(card, GoodsCard):
+                self.hand_goods.append(card)
             else:
-                # TODO: グッズとトレーナーの場合
+                # TODO: トレーナーの場合
                 pass
         logger.debug(f"{self}が{number}枚引いた")
         logger.debug(f"手札ポケモン: {self.hand_pockemon}")
@@ -71,9 +81,9 @@ class Player:
         manage_duplicates = set()
         for i in range(1, min(3, len(selection_list)) + 1):
             for comb in combinations(selection_list, i):
-                if tuple([self.hand_pockemon[j].name for j in comb]) in manage_duplicates:
+                if tuple(sorted([self.hand_pockemon[j].name for j in comb])) in manage_duplicates:
                     continue
-                manage_duplicates.add(tuple([self.hand_pockemon[j].name for j in comb]))
+                manage_duplicates.add(tuple(sorted([self.hand_pockemon[j].name for j in comb])))
                 selection[len(selection)] = f"{[self.hand_pockemon[j].name for j in comb]}をベンチに出す"
                 candidates[len(candidates)] = comb
 
@@ -90,8 +100,17 @@ class Player:
         logger.debug(f"手札ポケモン: {self.hand_pockemon}")
 
     # 通常ターンの行動
-    def start_turn(self):
+    def start_turn(self, can_attack: bool = True, can_evolve: bool = True):
         # TODO: 行動順の仮定を行う必要がある
+        # goodsを使う
+        self.use_goods()
+        # trainerを使う
+        self.use_trainer()
+        # 手札のポケモンを出す
+        # 手札のポケモンを進化させる
+        # エネルギーをつける
+        # 逃げる
+        # 攻撃する or ターン終了
         pass
 
     # エネルギーをつける
@@ -104,6 +123,38 @@ class Player:
         i = random.randint(0, len(self.energy_candidates) - 1)
         logger.debug(f"{self}が{self.energy_candidates[i]}を手に入れた")
         self.current_energy = self.energy_candidates[i]
+
+    def use_goods(self):
+        goods_cards: list[GoodsCard] = []
+        for card in self.hand_goods[:]:
+            if card.name == "MonsterBall":
+                card.use(self.game)
+                logger.debug(f"{self}が{card}を使った")
+                logger.debug(f"手札ポケモン: {self.hand_pockemon}")
+            else:
+                goods_cards.append(card)
+
+        # それぞれ使うか使わないか,2**len(goods_cards)通り
+        selection = {}
+        candidates: dict[int, list[GoodsCard]] = {}
+        manage_duplicates = set()
+        for i in range(2 ** len(goods_cards)):
+            use_goods: list[GoodsCard] = []
+            for j, card in enumerate(goods_cards):
+                if (i >> j) & 1:
+                    use_goods.append(card)
+            if tuple(sorted([card.name for card in use_goods])) in manage_duplicates:
+                continue
+            manage_duplicates.add(tuple(sorted([card.name for card in use_goods])))
+            selection[len(selection)] = f"{[card.name for card in use_goods]}を使う"
+            candidates[len(candidates)] = use_goods
+
+        i = self.select_action(selection)
+        for card in candidates[i]:
+            card.use(self.game)
+
+    def use_trainer(self):
+        pass
 
     # 選択肢を受け取り行動を選択する。今のところはinput()で選択することに、ここをAI化するのが目標
     def select_action(self, selection: dict[int, str]):
@@ -118,6 +169,4 @@ class Player:
 
 
 if __name__ == "__main__":
-    from game.deck import Deck
-    from game.energy import Energy
-    from game.cards.pockemon_card import PockemonCard
+    from game.game import Game
