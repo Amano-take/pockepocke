@@ -53,5 +53,15 @@ class Katsura(TrainerCard):
     pass
 
 
+class HakaseResearcher(TrainerCard):
+    def use(self, game: Game):
+        game.active_player.draw(2)
+        super().use(game)
+
+
+class Natsume(TrainerCard):
+    pass
+
+
 if __name__ == "__main__":
     from game.game import Game

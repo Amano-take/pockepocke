@@ -84,6 +84,7 @@ class Zeburaika(PockemonCard):
     # サンダーアロー
     class ThunderArrow(PockemonAttack):
         damage = 30
+        required_energy = RequiredEnergy([Energy.LIGHTNING], 0)
 
         def attack(self, game: Game):
             selection = {}
