@@ -75,6 +75,7 @@ def test_use_goods():
         # 引数のselectionのlenが18であることを確認
         assert len(mock.call_args[0][0]) == 9
 
+
 def test_attack_pikachu():
     player1.draw(7)
     player2.draw(7)
