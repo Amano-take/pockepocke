@@ -24,6 +24,19 @@ class PockemonType(Enum):
     def __repr__(self):
         return self.name
 
+# pockemonの状態を表すクラス
+class PockemonStatus(Enum):
+    NORMAL = "normal"
+    PARALYZED = "paralyzed"
+    POISONED = "poisoned"
+    ASLEEP = "asleep"
+
+    def __str__(self):
+        return self.name.lower()
+    
+    def __repr__(self):
+        return self.name
+
 
 class PockemonAttack:
 
@@ -93,12 +106,15 @@ class PockemonCard(Card):
 
             attack.can_attack = can_attack
             attack.set_type(self.type)
+            
+        # 状態設定
+        self.status = PockemonStatus.NORMAL
 
     def paralyze(self):
-        self.is_paralyzed = True
+        self.status = PockemonStatus.PARALYZED
 
     def candidate_attacks(self):
-        if self.is_paralyzed:
+        if self.status == PockemonStatus.PARALYZED:
             return []
 
         return [attack for attack in self.attacks if attack.can_attack()]

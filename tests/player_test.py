@@ -1,7 +1,6 @@
 import pytest
 from unittest.mock import patch
-from game.cards.pockemon_cards import *
-from game.cards.goods_cards import *
+from game.cards import *
 
 from game.deck import Deck
 from game.player import Player
@@ -67,6 +66,50 @@ def test_use_goods():
         # 引数のselectionのlenが18であることを確認
         assert len(mock.call_args[0][0]) == 18
 
+game = Game()
+
+deck = [
+    PikachuEX(),
+    PikachuEX(),
+    ThunderEX(),
+    ThunderEX(),
+    Shimama(),
+    Shimama(),
+    Zeburaika(),
+    Zeburaika(),
+    Dedenne(),
+	HakaseResearcher(),
+	HakaseResearcher(),
+	Natsume(),
+	Natsume(),
+	Sakaki(),
+	MonsterBall(),
+	MonsterBall(),
+	Speeder(),
+	Speeder(),
+	KizuGusuri(),
+	KizuGusuri(),
+]
+
+player1 = Player(Deck(deck), [Energy.LIGHTNING])
+player2 = Player(Deck(deck), [Energy.LIGHTNING])
+
+game.set_players(player1, player2)
+
+def test_attack_pikachu():
+    player1.draw(7)
+    player2.draw(7)
+    player1_pickachu1, player1_pickachu2 = player1.hand_pockemon[0], player1.hand_pockemon[1]
+    player1_thunder1, player1_thunder2 = player1.hand_pockemon[2], player1.hand_pockemon[3]
+    player2_pickachu1, player2_pickachu2 = player2.hand_pockemon[0], player2.hand_pockemon[1]
+    player1.prepare_active_pockemon(player1_pickachu1)
+    player2.prepare_active_pockemon(player2_pickachu1)
+    player1.prepare_bench_pockemon(player1_pickachu2)
+    player1.prepare_bench_pockemon(player1_thunder1)
+
+    from ipdb import set_trace; set_trace()
+    
+
 
 def _test_prepare():
     deck = [TamaTama(), Nassy(), Selevi()]
@@ -80,5 +123,5 @@ def _test_prepare():
 
 
 if __name__ == "__main__":
-    test_use_goods()
-    print("test_use_goods passed")
+    test_attack_pikachu()
+

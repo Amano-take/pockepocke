@@ -12,7 +12,8 @@ class GoodsCard(Card):
         return True
 
     def use(self, game: Game):
-        pass
+        game.active_player.hand_goods.remove(self)
+        game.active_player.trash.append(self)
 
     def __str__(self):
         return self.name
@@ -24,31 +25,19 @@ class GoodsCard(Card):
 class KizuGusuri(GoodsCard):
     def use(self, game: Game):
         game.active_player.active_pockemon.hp += 20
-        game.active_player.hand_goods.remove(self)
-        game.active_player.trash.append(self)
+        super().use(game)
 
 
 class MonsterBall(GoodsCard):
     def use(self, game: Game):
         game.active_player.hand_pockemon.append(game.active_player.deck.draw_seed_pockemon())
-        game.active_player.hand_goods.remove(self)
-        game.active_player.trash.append(self)
+        super().use(game)
 
 
 class Speeder(GoodsCard):
     def use(self, game: Game):
-        game.active_player.active_pockemon.retreat_cost -= 1
-        for bench_pockemon in game.active_player.bench:
-            bench_pockemon.retreat_cost -= 1
-        game.active_player.hand_goods.remove(self)
-        game.active_player.trash.append(self)
-
-        def end_process(game: Game):
-            game.active_player.active_pockemon.retreat_cost += 1
-            for bench_pockemon in game.active_player.bench:
-                bench_pockemon.retreat_cost += 1
-
-        game.active_player.processes_at_end_of_turn.append(end_process)
+        game.active_player.retreat_buff(1)
+        super().use(game)
 
 
 class RedCard(GoodsCard):
@@ -61,8 +50,7 @@ class RedCard(GoodsCard):
         game.waiting_player.hand_trainer = []
         game.waiting_player.deck.shuffle()
         game.waiting_player.draw(3)
-        game.active_player.hand_goods.remove(self)
-        game.active_player.trash.append(self)
+        super().use(game)
 
 
 class PockemonnoHue(GoodsCard):
@@ -83,8 +71,7 @@ class PockemonnoHue(GoodsCard):
         game.waiting_player.bench.append(candidates[i])
         game.waiting_player.trash.remove(candidates[i])
 
-        game.active_player.hand_goods.remove(self)
-        game.active_player.trash.append(self)
+        super().use(game)
 
     def can_use(self, game: Game):
         if len(game.waiting_player.bench) == 3:
@@ -99,8 +86,7 @@ class MaboroshinoSekibann(GoodsCard):
         else:
             game.active_player.deck.extend_last(card)
 
-        game.active_player.hand_goods.remove(self)
-        game.active_player.trash.append(self)
+        super().use(game)
 
 
 if __name__ == "__main__":

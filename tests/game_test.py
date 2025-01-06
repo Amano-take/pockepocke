@@ -19,4 +19,26 @@ deck = [
     Zeburaika(),
     Zeburaika(),
     Dedenne(),
+	HakaseResearcher(),
+	HakaseResearcher(),
+	Natsume(),
+	Natsume(),
+	Sakaki(),
+	MonsterBall(),
+	MonsterBall(),
+	Speeder(),
+	Speeder(),
+	KizuGusuri(),
+	KizuGusuri(),
 ]
+
+player1 = Player(Deck(deck), [Energy.LIGHTNING])
+player2 = Player(Deck(deck), [Energy.LIGHTNING])
+
+game.set_players(player1, player2)
+
+
+def test_attack_pikachu():
+	pass
+
+

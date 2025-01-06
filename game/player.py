@@ -8,6 +8,7 @@ from game.deck import Deck
 from game.energy import Energy
 from game.cards.pockemon_card import PockemonCard
 from game.cards.goods_cards.goods import GoodsCard
+from game.cards.pockemon_card import PockemonAttack
 
 
 logger = logging.getLogger(__name__)
@@ -29,9 +30,7 @@ class Player:
         self.trash = []
         # ターンを終わったときの処理
         self.processes_at_end_of_turn = []
-
-    def __str__(self):
-        return self.name
+        # ターンを始めたときの処理
 
     def set_game(self, game: Game):
         self.game = game
@@ -51,6 +50,24 @@ class Player:
                 pass
         logger.debug(f"{self}が{number}枚引いた")
 
+    def prepare_active_pockemon(self, card: PockemonCard):
+        self.active_pockemon = card
+        self.hand_pockemon.remove(card)
+
+    def prepare_bench_pockemon(self, card: PockemonCard):
+        self.bench.append(card)
+        self.hand_pockemon.remove(card)
+
+    def candidate_attack(self):
+        attack_list = [None]
+        attack_list.extend(self.active_pockemon.candidate_attacks())
+        return attack_list
+
+    def attack(self, attack: None|PockemonAttack):
+        if attack is None:
+            return
+        attack.attack(self.game)
+
     # 準備ターンの行動
     def prepare(self):
         # active_pockemonを選ぶ
@@ -68,6 +85,7 @@ class Player:
         i = self.select_action(selection)
         self.active_pockemon = self.hand_pockemon.pop(candidates[i])
 
+        # benchを選ぶ
         selection_list = []
         for i, card in enumerate(self.hand_pockemon):
             assert isinstance(card, PockemonCard)
@@ -122,6 +140,12 @@ class Player:
         logger.debug(f"{self}が{self.energy_candidates[i]}を手に入れた")
         self.current_energy = self.energy_candidates[i]
 
+    def attack_buff(self, value: int):
+        self.attack_buff = value
+
+    def retreat_buff(self, value: int):
+        self.retreat_buff = value
+
     def use_goods(self):
         goods_cards: list[GoodsCard] = []
         for card in self.hand_goods[:]:
@@ -164,6 +188,9 @@ class Player:
         i = int(input())
         assert i in selection
         return i
+
+    def __str__(self):
+        return self.name
 
 
 if __name__ == "__main__":

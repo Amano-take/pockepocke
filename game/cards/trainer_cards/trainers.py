@@ -60,7 +60,25 @@ class HakaseResearcher(TrainerCard):
 
 
 class Natsume(TrainerCard):
-    pass
+    def use(self, game: Game):
+        selection = {}
+        candidates = {}
+        for i, card in enumerate(game.waiting_player.bench):
+            selection[i] = f"{card}とactiveを入れ替える"
+            candidates[i] = card
+
+        selected = game.waiting_player.select_action(selection)
+        game.waiting_player.bench.remove(candidates[selected])
+        game.waiting_player.bench.append(game.waiting_player.active_pockemon)
+        game.waiting_player.active_pockemon = candidates[selected]
+        super().use(game)
+
+    def can_use(self, game: Game):
+        return len(game.waiting_player.bench) > 0
+
+class Sakaki(TrainerCard):
+    def use(self, game: Game):
+        game.active_player.buff(10)
 
 
 if __name__ == "__main__":
