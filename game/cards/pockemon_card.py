@@ -73,6 +73,7 @@ class PockemonCard(Card):
 
         # 以下設定が必要
         self.hp = self.__class__.hp
+        self.max_hp = self.__class__.hp
         self.type = self.__class__.type
         self.weakness = self.__class__.weakness
         self.attacks: list[PockemonAttack] = copy.deepcopy(self.__class__.attacks)
@@ -101,10 +102,7 @@ class PockemonCard(Card):
         # can_attack, set_typeを自動設定
         for attack in self.attacks:
 
-            def can_attack():
-                return attack.can_attack_hidden(self.energies)
-
-            attack.can_attack = can_attack
+            attack.can_attack = lambda: attack.can_attack_hidden(self.energies)
             attack.set_type(self.type)
             
         # 状態設定
@@ -184,8 +182,9 @@ class PockemonCard(Card):
         return ret
 
     def __repr__(self):
-        return str(self)
-
+        # オブジェクトのメモリアドレスを返す
+        return super().__repr__()
+        
 
 if __name__ == "__main__":
     from game.game import Game

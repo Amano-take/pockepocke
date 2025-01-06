@@ -1,12 +1,17 @@
 import random
+from copy import deepcopy
 
 from game.cards.base_card import Card
 from game.cards.pockemon_card import PockemonCard
 
 
+
 class Deck:
     def __init__(self, cards: list[Card]):
-        self.cards = cards[:]
+        # クラスを取得してインスタンスを作成
+        self.cards = []
+        for card in cards:
+            self.cards.append(type(card)())
 
     def draw(self):
         return self.cards.pop(0)
