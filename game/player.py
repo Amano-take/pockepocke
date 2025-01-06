@@ -128,7 +128,7 @@ class Player:
             if card.name == "MonsterBall":
                 card.use(self.game)
                 logger.debug(f"{self}が{card}を使った")
-            else:
+            elif card.can_use(self.game):
                 goods_cards.append(card)
 
         # それぞれ使うか使わないか,2**len(goods_cards)通り

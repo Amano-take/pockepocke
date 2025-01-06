@@ -42,14 +42,14 @@ class PockemonAttack:
 
         return True
 
-    def other_effect(self, game: Game):
-        pass
-
     def can_attack(self):
         pass
 
-    def attack(self, game: Game):
-        self.other_effect(game)
+    def set_type(self, type_: PockemonType):
+        self.attack_type = type_
+
+    def attack(self, game: Game, plus_damage=0):
+        game.waiting_player.active_pockemon.get_damage(self.damage + plus_damage, self.attack_type)
 
 
 class PockemonCard(Card):
@@ -85,19 +85,26 @@ class PockemonCard(Card):
         else:
             self.is_seed = False
 
-        # can_attackを自動設定
+        # can_attack, set_typeを自動設定
         for attack in self.attacks:
 
             def can_attack():
                 return attack.can_attack_hidden(self.energies)
 
             attack.can_attack = can_attack
+            attack.set_type(self.type)
 
-    def __str__(self):
-        return self.name
+    def paralyze(self):
+        self.is_paralyzed = True
 
-    def __repr__(self):
-        return self.name
+    def candidate_attacks(self):
+        if self.is_paralyzed:
+            return []
+
+        return [attack for attack in self.attacks if attack.can_attack()]
+
+    def attack(self, attack: PockemonAttack):
+        attack.attack(self.game)
 
     def attach_energy(self, energy: Energy):
         self.energies.attach_energy(energy)
@@ -105,16 +112,27 @@ class PockemonCard(Card):
     def detach_energy(self, energy: Energy):
         self.energies.detach_energy(energy)
 
-    def get_damage(self, damage: int):
+    def get_damage(self, damage: int, enemy_type: PockemonType = None):
+        if damage < 0:
+            return
+        if enemy_type is not None and enemy_type == self.weakness:
+            damage += 20
         self.hp -= damage
         if self.hp > 0:
             return
+
+        self.leave_battle()
 
     def enter_battle(self):
         pass
 
     def leave_battle(self):
-        pass
+        if self.is_ex:
+            self.game.waiting_player.sides += 2
+        else:
+            self.game.waiting_player.sides += 1
+
+        return
 
     def use_to_active(self):
         self.game.active_player.active_pockemon = self

@@ -86,6 +86,10 @@ class PockemonnoHue(GoodsCard):
         game.active_player.hand_goods.remove(self)
         game.active_player.trash.append(self)
 
+    def can_use(self, game: Game):
+        if len(game.waiting_player.bench) == 3:
+            return False
+
 
 class MaboroshinoSekibann(GoodsCard):
     def use(self, game: Game):
