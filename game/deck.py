@@ -1,3 +1,4 @@
+from __future__ import annotations
 import random
 from copy import deepcopy
 
@@ -5,11 +6,10 @@ from game.cards.base_card import Card
 from game.cards.pockemon_card import PockemonCard
 
 
-
 class Deck:
     def __init__(self, cards: list[Card]):
         # クラスを取得してインスタンスを作成
-        self.cards = []
+        self.cards: list[Card] = []
         for card in cards:
             self.cards.append(type(card)())
 
@@ -29,6 +29,12 @@ class Deck:
                     self.shuffle()
                     return return_card
         return None
+
+    def set_player(self, player: Player):
+        self.player = player
+        for card in self.cards:
+            if isinstance(card, PockemonCard):
+                card.set_player(player, player.opponent)
 
     def shuffle(self):
         random.shuffle(self.cards)
@@ -54,3 +60,7 @@ class Deck:
             assert isinstance(card, Card)
 
         # TODO: 各クラスのカードが2枚までかどうか
+
+
+if __name__ == "__main__":
+    from game.player import Player

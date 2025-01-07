@@ -4,6 +4,7 @@ import copy
 from enum import Enum
 from game.energy import Energy, AttachedEnergies, RequiredEnergy
 from game.cards.base_card import Card
+from game.exceptions import GameOverException
 
 
 class PockemonType(Enum):
@@ -24,6 +25,7 @@ class PockemonType(Enum):
     def __repr__(self):
         return self.name
 
+
 # pockemonの状態を表すクラス
 class PockemonStatus(Enum):
     NORMAL = "normal"
@@ -33,7 +35,7 @@ class PockemonStatus(Enum):
 
     def __str__(self):
         return self.name.lower()
-    
+
     def __repr__(self):
         return self.name
 
@@ -104,9 +106,14 @@ class PockemonCard(Card):
 
             attack.can_attack = lambda: attack.can_attack_hidden(self.energies)
             attack.set_type(self.type)
-            
+
         # 状態設定
         self.status = PockemonStatus.NORMAL
+
+    def set_player(self, player: Player, otherwise: Player):
+        self.player = player
+        self.otherwise = otherwise
+        self.game = player.game
 
     def paralyze(self):
         self.status = PockemonStatus.PARALYZED
@@ -128,24 +135,41 @@ class PockemonCard(Card):
 
     def get_damage(self, damage: int, enemy_type: PockemonType = None):
         if damage < 0:
-            return
+            return True
         if enemy_type is not None and enemy_type == self.weakness:
             damage += 20
         self.hp -= damage
         if self.hp > 0:
-            return
+            return True
 
-        self.leave_battle()
+        return self.leave_battle()
 
     def enter_battle(self):
         pass
 
     def leave_battle(self):
+        """
+        return:
+            True ゲームを続ける
+            False ゲーム終了
+        """
         if self.is_ex:
-            self.game.waiting_player.sides += 2
+            self.otherwise.sides += 2
         else:
-            self.game.waiting_player.sides += 1
+            self.otherwise.sides += 1
 
+        # ゲームの終了判定
+        if len(self.otherwise.bench) == 0:
+            self.game.winner = self.otherwise
+            self.game.loser = self.player
+            raise GameOverException("勝利プレイヤー: " + str(self.otherwise))
+
+        if self.otherwise.sides >= 3:
+            self.game.winner = self.otherwise
+            self.game.loser = self.player
+            raise GameOverException("勝利プレイヤー: " + str(self.otherwise))
+
+        self.player.select_bench()
         return
 
     def use_to_active(self):
@@ -184,7 +208,7 @@ class PockemonCard(Card):
     def __repr__(self):
         # オブジェクトのメモリアドレスを返す
         return super().__repr__()
-        
+
 
 if __name__ == "__main__":
     from game.game import Game

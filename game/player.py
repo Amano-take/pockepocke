@@ -1,4 +1,5 @@
 from __future__ import annotations
+from game.exceptions import GameOverException
 import game.utils
 import logging
 import random
@@ -34,6 +35,11 @@ class Player:
 
     def set_game(self, game: Game):
         self.game = game
+        if game.player1 is self:
+            self.opponent = game.player2
+        else:
+            self.opponent = game.player1
+        self.deck.set_player(self)
 
     def draw(self, number: int = 1):
         for _ in range(number):
@@ -46,7 +52,7 @@ class Player:
             elif isinstance(card, GoodsCard):
                 self.hand_goods.append(card)
             else:
-                # TODO: トレーナーの場合
+                self.hand_trainer.append(card)
                 pass
         logger.debug(f"{self}が{number}枚引いた")
 
@@ -63,7 +69,7 @@ class Player:
         attack_list.extend(self.active_pockemon.candidate_attacks())
         return attack_list
 
-    def attack(self, attack: None|PockemonAttack):
+    def attack(self, attack: None | PockemonAttack):
         if attack is None:
             return
         attack.attack(self.game)
@@ -123,10 +129,15 @@ class Player:
         # trainerを使う
         self.use_trainer()
         # 手札のポケモンを出す
+        # self.use_pockemon_select()
         # 手札のポケモンを進化させる
+        # self.evolve_select()
         # エネルギーをつける
+        # self.attach_energy_select()
         # 逃げる
+        # self.retreat_select()
         # 攻撃する or ターン終了
+        # self.attack_select()
         pass
 
     # エネルギーをつける
@@ -177,6 +188,22 @@ class Player:
 
     def use_trainer(self):
         pass
+
+    def select_bench(self):
+        # active_pockemonが倒されたときの処理
+        if len(self.bench) == 0:
+            raise GameOverException("勝利プレイヤー: " + str(self.opponent))
+
+        selection = {}
+        candidates = {}
+        for i, card in enumerate(self.bench):
+            selection[len(selection)] = f"{card}をアクティブに出す"
+            candidates[len(candidates)] = i
+
+        choice = self.select_action(selection)
+        self.active_pockemon = self.bench.pop(candidates[choice])
+
+        logger.debug(f"{self}が{self.active_pockemon}をアクティブに出した")
 
     # 選択肢を受け取り行動を選択する。今のところはinput()で選択することに、ここをAI化するのが目標
     def select_action(self, selection: dict[int, str]):

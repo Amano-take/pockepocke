@@ -6,6 +6,8 @@ from game.deck import Deck
 from game.player import Player
 from game.energy import Energy
 from game.game import Game
+from game.exceptions import GameOverException
+from .utils.set_lightning import set_lightning
 
 game = Game()
 
@@ -95,6 +97,7 @@ def test_attack_pikachu():
     player2.prepare_active_pockemon(player2_pickachu1)
     player1.prepare_bench_pockemon(player1_pickachu2)
     player1.prepare_bench_pockemon(player1_thunder1)
+    player2.prepare_bench_pockemon(player2_pickachu2)
     game.active_player = player1
     game.waiting_player = player2
 
@@ -126,7 +129,56 @@ def test_attack_pikachu():
 
     player2.attack(attack_list[1])
 
-    assert player1.active_pockemon.hp == player1.active_pockemon.max_hp
+    assert player1.active_pockemon.hp == player1.active_pockemon.max_hp - 30
+
+    game.active_player = player1
+    game.waiting_player = player2
+
+    player1.attack(player1_pickachu1.attacks[0])
+
+    assert player1.sides == 2
+
+    assert player2.active_pockemon is player2_pickachu2
+    player1.attack(player1_pickachu2.attacks[0])
+    with pytest.raises(GameOverException):
+        player1.attack(player1_pickachu2.attacks[0])
+
+
+def test_select_bench():
+    game, player1, player2 = set_lightning()
+    player1.draw(7)
+    player2.draw(7)
+    player1_pickachu1, player1_pickachu2 = (
+        player1.hand_pockemon[0],
+        player1.hand_pockemon[1],
+    )
+    player1_thunder1, player1_thunder2 = (
+        player1.hand_pockemon[2],
+        player1.hand_pockemon[3],
+    )
+    player2_pickachu1, player2_pickachu2 = (
+        player2.hand_pockemon[0],
+        player2.hand_pockemon[1],
+    )
+    player2_thunder1, player2_thunder2 = (
+        player2.hand_pockemon[2],
+        player2.hand_pockemon[3],
+    )
+    player1.prepare_active_pockemon(player1_pickachu1)
+    player2.prepare_active_pockemon(player2_pickachu1)
+    player1.prepare_bench_pockemon(player1_pickachu2)
+    player1.prepare_bench_pockemon(player1_thunder1)
+    player1.prepare_bench_pockemon(player1_thunder2)
+    player2.prepare_bench_pockemon(player2_pickachu2)
+    player2.prepare_bench_pockemon(player2_thunder1)
+    game.active_player = player1
+    game.waiting_player = player2
+    # player2のselect_actionをmock
+    with patch.object(player2, "select_action", return_value=0) as mock:
+        player1.attack(player1_pickachu1.attacks[0])
+        player1.attack(player1_pickachu2.attacks[0])
+        # mockの引数のselectionのlenが1であることを確認
+        assert len(mock.call_args[0][0]) == 2
 
 
 def _test_prepare():
