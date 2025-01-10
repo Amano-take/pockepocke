@@ -181,6 +181,57 @@ def test_select_bench():
         assert len(mock.call_args[0][0]) == 2
 
 
+def test_use_trainers():
+    game, player1, player2 = set_lightning()
+    player1.draw(20)
+    player2.draw(20)
+    game.active_player = player1
+    game.waiting_player = player2
+    with patch.object(player1, "select_action", return_value=0) as mock:
+        player1.use_trainer()
+        assert len(mock.call_args[0][0]) == 3
+
+
+def test_pockemon_select():
+    game, player1, player2 = set_lightning()
+    player1.draw(7)
+    player2.draw(7)
+    player1_pickachu1, player1_pickachu2 = (
+        player1.hand_pockemon[0],
+        player1.hand_pockemon[1],
+    )
+    player1_thunder1, player1_thunder2 = (
+        player1.hand_pockemon[2],
+        player1.hand_pockemon[3],
+    )
+    player2_pickachu1, player2_pickachu2 = (
+        player2.hand_pockemon[0],
+        player2.hand_pockemon[1],
+    )
+    player2_thunder1, player2_thunder2 = (
+        player2.hand_pockemon[2],
+        player2.hand_pockemon[3],
+    )
+    player1.prepare_active_pockemon(player1_pickachu1)
+    player2.prepare_active_pockemon(player2_pickachu1)
+    player1.prepare_bench_pockemon(player1_pickachu2)
+    player1.prepare_bench_pockemon(player1_thunder1)
+    player1.prepare_bench_pockemon(player1_thunder2)
+    player2.prepare_bench_pockemon(player2_pickachu2)
+
+    game.active_player = player1
+    game.waiting_player = player2
+
+    with patch.object(player2, "select_action", return_value=0) as mock:
+        player2.use_pockemon_select()
+        assert len(mock.call_args[0][0]) == 6
+        print(mock.call_args[0][0])
+
+    with patch.object(player1, "select_action", return_value=0) as mock:
+        player1.use_pockemon_select()
+        assert len(mock.call_args[0][0]) == 1
+
+
 def _test_prepare():
     deck = [TamaTama(), Nassy(), Selevi()]
     for _ in range(17):

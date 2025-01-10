@@ -9,7 +9,7 @@ class TrainerCard(Card):
     def __init__(self):
         self.name = self.__class__.__name__
 
-    def can_use(self):
+    def can_use(self, game: Game):
         return True
 
     def use(self, game: Game):
@@ -75,6 +75,7 @@ class Natsume(TrainerCard):
 
     def can_use(self, game: Game):
         return len(game.waiting_player.bench) > 0
+
 
 class Sakaki(TrainerCard):
     def use(self, game: Game):

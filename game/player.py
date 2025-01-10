@@ -9,6 +9,7 @@ from game.deck import Deck
 from game.energy import Energy
 from game.cards.pockemon_card import PockemonCard
 from game.cards.goods_cards.goods import GoodsCard
+from game.cards.trainer_cards.trainers import TrainerCard
 from game.cards.pockemon_card import PockemonAttack
 
 
@@ -103,10 +104,17 @@ class Player:
         manage_duplicates = set()
         for i in range(0, min(3, len(selection_list)) + 1):
             for comb in combinations(selection_list, i):
-                if tuple(sorted([self.hand_pockemon[j].name for j in comb])) in manage_duplicates:
+                if (
+                    tuple(sorted([self.hand_pockemon[j].name for j in comb]))
+                    in manage_duplicates
+                ):
                     continue
-                manage_duplicates.add(tuple(sorted([self.hand_pockemon[j].name for j in comb])))
-                selection[len(selection)] = f"{[self.hand_pockemon[j].name for j in comb]}をベンチに出す"
+                manage_duplicates.add(
+                    tuple(sorted([self.hand_pockemon[j].name for j in comb]))
+                )
+                selection[len(selection)] = (
+                    f"{[self.hand_pockemon[j].name for j in comb]}をベンチに出す"
+                )
                 candidates[len(candidates)] = comb
 
         i = self.select_action(selection)
@@ -129,7 +137,7 @@ class Player:
         # trainerを使う
         self.use_trainer()
         # 手札のポケモンを出す
-        # self.use_pockemon_select()
+        self.use_pockemon_select()
         # 手札のポケモンを進化させる
         # self.evolve_select()
         # エネルギーをつける
@@ -187,7 +195,71 @@ class Player:
             logger.debug(f"{self}が{card}を使った")
 
     def use_trainer(self):
-        pass
+        trainer_cards: list[TrainerCard] = []
+        for card in self.hand_trainer[:]:
+            if card.can_use(self.game):
+                trainer_cards.append(card)
+
+        # 使用するかどうかの選択肢
+        selection = {}
+        candidates: dict[int, list[TrainerCard]] = {}
+        manage_duplicates = set()
+
+        # 使用しない選択肢を追加
+        selection[len(selection)] = "トレーナーカードを使用しない"
+        candidates[len(candidates)] = []
+
+        # 各トレーナーカード単体での使用
+        for card in trainer_cards:
+            if card.name in manage_duplicates:
+                continue
+            manage_duplicates.add(card.name)
+            selection[len(selection)] = f"{card.name}を使う"
+            candidates[len(candidates)] = [card]
+
+        i = self.select_action(selection)
+        for card in candidates[i]:
+            card.use(self.game)
+            logger.debug(f"{self}が{card}を使った")
+
+    def use_pockemon_select(self):
+        # benchを選ぶ
+        selection_list = []
+        for i, card in enumerate(self.hand_pockemon):
+            assert isinstance(card, PockemonCard)
+            if card.is_seed:
+                selection_list.append(i)
+
+        selection = {}
+        candidates = {}
+        manage_duplicates = set()
+        for i in range(0, min(3 - len(self.bench), len(selection_list)) + 1):
+            for comb in combinations(selection_list, i):
+                if (
+                    tuple(sorted([self.hand_pockemon[j].name for j in comb]))
+                    in manage_duplicates
+                ):
+                    continue
+                manage_duplicates.add(
+                    tuple(sorted([self.hand_pockemon[j].name for j in comb]))
+                )
+                selection[len(selection)] = (
+                    f"{[self.hand_pockemon[j].name for j in comb]}をベンチに出す"
+                )
+                candidates[len(candidates)] = comb
+
+        i = self.select_action(selection)
+        for j in candidates[i]:
+            self.bench.append(self.hand_pockemon[j])
+
+        for j in sorted(candidates[i], reverse=True):
+            self.hand_pockemon.pop(j)
+
+        # comb番目を手札から削除
+        for j in sorted(candidates[i], reverse=True):
+            self.hand_pockemon.pop(j)
+
+        logger.debug(f"{self}が{self.active_pockemon}をアクティブに出した")
 
     def select_bench(self):
         # active_pockemonが倒されたときの処理
