@@ -1,8 +1,8 @@
 from random import random
-
+from enum import Enum
 
 from game.player import Player
-from enum import Enum
+from game.exceptions import GameOverException
 
 
 class Game:
@@ -40,13 +40,23 @@ class Game:
         self.turn_start()
 
     def turn_start(self):
-        self.turn += 1
-        self.active_player.draw()
-        if self.turn > 1:
-            self.active_player.get_energy()
-        can_attack = self.turn > 1
-        can_evolve = self.turn > 2
-        self.active_player.start_turn(can_attack, can_evolve)
+        while True:
+            self.turn += 1
+            self.active_player.draw()
+            if self.turn > 1:
+                self.active_player.get_energy()
+            can_attack = self.turn > 1
+            can_evolve = self.turn > 2
+            try:
+                self.active_player.start_turn(can_attack, can_evolve)
+            except GameOverException as e:
+                print(e)
+                break
+
+            self.active_player, self.waiting_player = (
+                self.waiting_player,
+                self.active_player,
+            )
 
     def coin_toss(self):
         # 0が外れ　1が当たり

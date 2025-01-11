@@ -1,5 +1,8 @@
 import threading
 import time
+import sys, os
+
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from game import *
 
 
@@ -18,7 +21,9 @@ class Visualizer:
                 f.write(str(self.game.player1) + "\n")
 
                 f.write("sides: " + str(self.game.player1.sides) + "\n")
-                f.write("current_energy: " + str(self.game.player1.current_energy) + "\n")
+                f.write(
+                    "current_energy: " + str(self.game.player1.current_energy) + "\n"
+                )
                 f.write("energy_value: " + str(self.game.player1.energy_values) + "\n")
                 f.write(
                     "hand: "
@@ -35,7 +40,9 @@ class Visualizer:
                 f.write("--------------------\n")
                 f.write(str(self.game.player2) + "\n")
                 f.write("sides: " + str(self.game.player2.sides) + "\n")
-                f.write("current_energy: " + str(self.game.player2.current_energy) + "\n")
+                f.write(
+                    "current_energy: " + str(self.game.player2.current_energy) + "\n"
+                )
                 f.write("energy_value: " + str(self.game.player2.energy_values) + "\n")
                 f.write(
                     "hand: "
@@ -53,8 +60,8 @@ class Visualizer:
                 time.sleep(1)
 
     def start(self):
-        thread1 = threading.Thread(target=self.game.start)
-        thread2 = threading.Thread(target=self.visualize)
+        thread1 = threading.Thread(target=self.game.start, daemon=True)
+        thread2 = threading.Thread(target=self.visualize, daemon=True)
         thread1.start()
         thread2.start()
         thread1.join()
@@ -63,23 +70,12 @@ class Visualizer:
 
 if __name__ == "__main__":
     visualizer = Visualizer()
-    deck = [
-        TamaTama(),
-        Nassy(),
-        Selevi(),
-        MonsterBall(),
-        MonsterBall(),
-        KizuGusuri(),
-        KizuGusuri(),
-        Speeder(),
-        Speeder(),
-        RedCard(),
-    ]
-    for _ in range(20 - len(deck)):
-        deck.append(Tsutaja())
+    from tests.utils.set_lightning import lightning_deck
 
-    player1 = Player(Deck(deck), [Energy.GRASS])
-    player2 = Player(Deck(deck), [Energy.FIRE])
+    deck = lightning_deck()
+
+    player1 = Player(Deck(deck), [Energy.LIGHTNING])
+    player2 = Player(Deck(deck), [Energy.LIGHTNING])
 
     visualizer.set_players(player1, player2)
     visualizer.start()

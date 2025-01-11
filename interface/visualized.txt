@@ -1,23 +1,18 @@
-プレイヤー38
+player22
 sides: 0
-current_energy: None
+current_energy: grass
 energy_value: [1, 1, 1, 1, 1, 1, 1, 1]
-hand: [], [name: Tsutaja   hp: 70   type: grass   weakness: fire   retreat_cost: 1   attached_energies: 
-, name: Tsutaja   hp: 70   type: grass   weakness: fire   retreat_cost: 1   attached_energies: 
-], []
-bench: [name: Tsutaja   hp: 70   type: grass   weakness: fire   retreat_cost: 1   attached_energies: 
-, name: Tsutaja   hp: 70   type: grass   weakness: fire   retreat_cost: 1   attached_energies: 
-, name: Tsutaja   hp: 70   type: grass   weakness: fire   retreat_cost: 1   attached_energies: 
-]
-active: name: Tsutaja   hp: 70   type: grass   weakness: fire   retreat_cost: 1   attached_energies: 
+hand: [KizuGusuri, Speeder], [<game.cards.pockemon_cards.lightning_card.Zeburaika object at 0x0000022BDA3D2350>], [Natsume, Natsume]
+bench: [<game.cards.pockemon_cards.lightning_card.Zeburaika object at 0x0000022BDA3B2B10>]
+active: name: PikachuEX   hp: 120   type: lightning   weakness: fighting   retreat_cost: 1   attached_energies: 
 
 --------------------
+player52
 sides: 0
 current_energy: None
 energy_value: [1, 1, 1, 1, 1, 1, 1, 1]
-hand: [KizuGusuri, Speeder], [], []
-bench: [name: Tsutaja   hp: 70   type: grass   weakness: fire   retreat_cost: 1   attached_energies: 
-, name: Tsutaja   hp: 70   type: grass   weakness: fire   retreat_cost: 1   attached_energies: 
-]
-active: name: TamaTama   hp: 50   type: grass   weakness: fire   retreat_cost: 1   attached_energies: 
+hand: [MonsterBall], [<game.cards.pockemon_cards.lightning_card.Zeburaika object at 0x0000022BDA3CE690>], [Natsume, Natsume]
+bench: [<game.cards.pockemon_cards.lightning_card.PikachuEX object at 0x0000022BDA3B3360>, <game.cards.pockemon_cards.lightning_card.PikachuEX object at 0x0000022BDA3CDEB0>]
+active: name: ThunderEX   hp: 130   type: lightning   weakness: lightning   retreat_cost: 1   attached_energies: fire: 1
+
 

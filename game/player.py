@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 
 class Player:
     def __init__(self, deck: Deck, energies: list[Energy]):
-        self.name = "プレイヤー" + str(random.randint(1, 100))
+        self.name = "player" + str(random.randint(1, 100))
         self.deck = deck
         self.energy_candidates = energies
         self.energy_values = [1] * len(Energy)
@@ -143,10 +143,10 @@ class Player:
         self.use_goods()
         # trainerを使う
         self.use_trainer()
-        # 手札のポケモンを出す
-        self.use_pockemon_select()
         # 手札のポケモンを進化させる
         self.evolve_select()
+        # 手札のポケモンを出す
+        self.use_pockemon_select()
         # エネルギーをつける
         self.attach_energy_select()
         # 特性を使う

@@ -41,3 +41,30 @@ def set_lightning():
     game.set_players(player1, player2)
 
     return game, player1, player2
+
+
+def lightning_deck():
+    deck_lightning = [
+        PikachuEX(),
+        PikachuEX(),
+        ThunderEX(),
+        ThunderEX(),
+        Shimama(),
+        Shimama(),
+        Zeburaika(),
+        Zeburaika(),
+        Dedenne(),
+        HakaseResearcher(),
+        HakaseResearcher(),
+        Natsume(),
+        Natsume(),
+        Sakaki(),
+        MonsterBall(),
+        MonsterBall(),
+        Speeder(),
+        Speeder(),
+        KizuGusuri(),
+        KizuGusuri(),
+    ]
+
+    return deck_lightning
