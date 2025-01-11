@@ -1,9 +1,12 @@
 from __future__ import annotations
-from game.exceptions import GameOverException
-import game.utils
+
 import logging
 import random
-from itertools import combinations
+from itertools import combinations, chain, product
+from collections import defaultdict as ddict
+
+from game.exceptions import GameOverException
+import game.utils
 
 from game.deck import Deck
 from game.energy import Energy
@@ -139,20 +142,102 @@ class Player:
         # 手札のポケモンを出す
         self.use_pockemon_select()
         # 手札のポケモンを進化させる
-        # self.evolve_select()
+        self.evolve_select()
         # エネルギーをつける
-        # self.attach_energy_select()
+        self.attach_energy_select()
         # 逃げる
         # self.retreat_select()
         # 攻撃する or ターン終了
         # self.attack_select()
         pass
 
+    def evolve_select(self):
+        # 進化するポケモンを選ぶ
+        field_pockemon = ddict(list)
+        for i, card in enumerate([self.active_pockemon] + self.bench):
+            field_pockemon[card.name].append(card)
+
+        selection = []
+        for name, cards in field_pockemon.items():
+            # 手札の進化先ポケモンを探す
+            count = 0
+            for hand in self.hand_pockemon:
+                hand: PockemonCard
+                if hand.previous_pockemon == name:
+                    count += 1
+            if count == 0:
+                continue
+
+            evolve_list = []
+            for i in range(min(count, len(cards)) + 1):
+                for comb in combinations(cards, i):
+                    evolve_list.append(comb)
+
+            selection.append(evolve_list)
+
+        # selectionの各要素の直積を取る
+        result = [tuple(chain(*prod)) for prod in product(*selection)]
+        selection = {}
+        action = {}
+        for act in result:
+            selection[len(selection)] = f"{[card.name for card in act]}を進化させる"
+            action[len(action)] = [lambda card=card: self.evolve(card) for card in act]
+
+        i = self.select_action(selection)
+        for act in action[i]:
+            act()
+
+    def evolve(self, card: PockemonCard):
+        if not (card is self.active_pockemon or card in self.bench):
+            return False
+
+        for hand in self.hand_pockemon:
+            if hand.previous_pockemon == card.name:
+                # 受けているダメージは引き継ぐ
+                damage = card.max_hp - card.hp
+                if card is self.active_pockemon:
+                    self.active_pockemon = hand
+                    hand.hp = hand.max_hp - damage
+                    logger.debug(f"{self}がactiveな{card.name}を{hand}へ進化させた")
+                else:
+                    self.bench[self.bench.index(card)] = hand
+                    hand.hp = hand.max_hp - damage
+                    logger.debug(f"{self}がbenchの{card.name}を{hand}へ進化させた")
+                self.hand_pockemon.remove(hand)
+                return True
+
+        return False
+
     # エネルギーをつける
     def attach_energy(self, card: PockemonCard):
         card.attach_energy(self.current_energy)
         logger.debug(f"{self}が{self.current_energy}を{card}につけた")
         self.current_energy = None
+
+    def attach_energy_select(self):
+        """現在のエネルギーをどのポケモンにつけるか選択する, つけない場合もある"""
+        if not self.current_energy:
+            return
+
+        selection = {}
+        action = {}
+
+        # つけない場合
+        selection[len(selection)] = "エネルギーをつけない"
+        action[len(action)] = lambda: None
+
+        # アクティブポケモン
+        if self.active_pockemon:
+            selection[len(selection)] = f"{self.active_pockemon}にエネルギーをつける"
+            action[len(action)] = lambda: self.attach_energy(self.active_pockemon)
+
+        # ベンチポケモン
+        for i, card in enumerate(self.bench):
+            selection[len(selection)] = f"{card}にエネルギーをつける"
+            action[len(action)] = lambda card=card: self.attach_energy(card)
+
+        i = self.select_action(selection)
+        action[i]()
 
     def get_energy(self):
         i = random.randint(0, len(self.energy_candidates) - 1)

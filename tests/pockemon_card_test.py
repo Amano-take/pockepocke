@@ -17,12 +17,12 @@ def test_tama_tama():
     assert len(tama_tama.attacks) == 1
     assert tama_tama.attacks[0].name == "ChottoSeityou"
     assert tama_tama.energies.get_sum() == 0
-    assert tama_tama.attacks[0].can_attack() == False
+    assert tama_tama.can_attack(0) == False
 
     tama_tama.energies.attach_energy(Energy.GRASS)
 
     assert tama_tama.energies.get_sum() == 1
-    assert tama_tama.attacks[0].can_attack() == True
+    assert tama_tama.can_attack(0) == True
 
 
 def test_selevi():

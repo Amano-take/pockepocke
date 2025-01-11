@@ -57,13 +57,13 @@ def test_energy():
     selevi_player1.attach_energy(Energy.GRASS)
     selevi_player2.attach_energy(Energy.GRASS)
 
-    assert selevi_player1.attacks[0].can_attack() == False
-    assert selevi_player2.attacks[0].can_attack() == False
+    assert selevi_player1.can_attack(0) == False
+    assert selevi_player2.can_attack(0) == False
 
     player1.energy_values[Energy.GRASS.value] = 2
 
-    assert selevi_player1.attacks[0].can_attack() == True
-    assert selevi_player2.attacks[0].can_attack() == False
+    assert selevi_player1.can_attack(0) == True
+    assert selevi_player2.can_attack(0) == False
 
 
 def test_use_goods():
@@ -225,11 +225,89 @@ def test_pockemon_select():
     with patch.object(player2, "select_action", return_value=0) as mock:
         player2.use_pockemon_select()
         assert len(mock.call_args[0][0]) == 6
-        print(mock.call_args[0][0])
 
     with patch.object(player1, "select_action", return_value=0) as mock:
         player1.use_pockemon_select()
         assert len(mock.call_args[0][0]) == 1
+
+
+def test_evolve():
+    game, player1, player2 = set_lightning()
+    player1.draw(7)
+    player2.draw(7)
+    player1_shimama1, player1_shimama2 = (
+        player1.hand_pockemon[4],
+        player1.hand_pockemon[5],
+    )
+    player1_zeburaika1 = player1.hand_pockemon[6]
+    player1.prepare_active_pockemon(player1_shimama1)
+    player1.prepare_bench_pockemon(player1_shimama2)
+
+    game.active_player = player1
+    game.waiting_player = player2
+
+    assert player1.evolve(player1_shimama1) == True
+    assert player1.evolve(player1_shimama2) == False
+    assert player1.active_pockemon is player1_zeburaika1
+
+
+def test_attach_energy_select():
+    game, player1, player2 = set_lightning()
+    player1.draw(7)
+    player2.draw(7)
+    player1_pickachu1, player1_pickachu2 = (
+        player1.hand_pockemon[0],
+        player1.hand_pockemon[1],
+    )
+    player1_thunder1, player1_thunder2 = (
+        player1.hand_pockemon[2],
+        player1.hand_pockemon[3],
+    )
+    player2_pickachu1, player2_pickachu2 = (
+        player2.hand_pockemon[0],
+        player2.hand_pockemon[1],
+    )
+    player1.prepare_active_pockemon(player1_pickachu1)
+    player2.prepare_active_pockemon(player2_pickachu1)
+    player1.prepare_bench_pockemon(player1_pickachu2)
+    player1.prepare_bench_pockemon(player1_thunder1)
+    player2.prepare_bench_pockemon(player2_pickachu2)
+    game.active_player = player1
+    game.waiting_player = player2
+
+    player1.get_energy()
+
+    with patch.object(player1, "select_action", return_value=1) as mock:
+        player1.attach_energy_select()
+        assert len(mock.call_args[0][0]) == 4
+        assert player1_pickachu1.energies.get_sum() == 1
+        assert player1_pickachu2.energies.get_sum() == 0
+
+
+def test_evolve_select():
+    game, player1, player2 = set_lightning()
+    player1.draw(8)
+    player2.draw(8)
+    player1_shimama1, player1_shimama2 = (
+        player1.hand_pockemon[4],
+        player1.hand_pockemon[5],
+    )
+    player1_zeburaika1, player1_zeburaika2 = (
+        player1.hand_pockemon[6],
+        player1.hand_pockemon[7],
+    )
+    player1.prepare_active_pockemon(player1_shimama1)
+    player1.prepare_bench_pockemon(player1_shimama2)
+
+    game.active_player = player1
+    game.waiting_player = player2
+
+    with patch.object(player1, "select_action", return_value=3) as mock:
+        player1.evolve_select()
+        assert len(mock.call_args[0][0]) == 4
+
+    assert player1.active_pockemon.name == "Zeburaika"
+    assert player1.bench[0].name == "Zeburaika"
 
 
 def _test_prepare():

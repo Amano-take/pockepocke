@@ -52,19 +52,22 @@ class PockemonAttack:
             if self.required_energy.energies[i] > energies.energies[i]:
                 return False
 
-        if energies.get_sum() < sum(self.required_energy.energies) + self.required_energy.number_any_energy:
+        if (
+            energies.get_sum()
+            < sum(self.required_energy.energies)
+            + self.required_energy.number_any_energy
+        ):
             return False
 
         return True
-
-    def can_attack(self):
-        pass
 
     def set_type(self, type_: PockemonType):
         self.attack_type = type_
 
     def attack(self, game: Game, plus_damage=0):
-        game.waiting_player.active_pockemon.get_damage(self.damage + plus_damage, self.attack_type)
+        game.waiting_player.active_pockemon.get_damage(
+            self.damage + plus_damage, self.attack_type
+        )
 
 
 class PockemonCard(Card):
@@ -101,10 +104,8 @@ class PockemonCard(Card):
         else:
             self.is_seed = False
 
-        # can_attack, set_typeを自動設定
+        # set_typeを自動設定
         for attack in self.attacks:
-
-            attack.can_attack = lambda: attack.can_attack_hidden(self.energies)
             attack.set_type(self.type)
 
         # 状態設定
@@ -115,6 +116,12 @@ class PockemonCard(Card):
         self.otherwise = otherwise
         self.game = player.game
 
+    def can_attack(self, attack: PockemonAttack | int):
+        if isinstance(attack, int):
+            attack = self.attacks[attack]
+
+        return attack.can_attack_hidden(self.energies)
+
     def paralyze(self):
         self.status = PockemonStatus.PARALYZED
 
@@ -122,7 +129,7 @@ class PockemonCard(Card):
         if self.status == PockemonStatus.PARALYZED:
             return []
 
-        return [attack for attack in self.attacks if attack.can_attack()]
+        return [attack for attack in self.attacks if self.can_attack(attack)]
 
     def attack(self, attack: PockemonAttack):
         attack.attack(self.game)
