@@ -76,9 +76,7 @@ class Player:
         self.active_pockemon = card
 
     def candidate_attack(self):
-        attack_list = [None]
-        attack_list.extend(self.active_pockemon.candidate_attacks())
-        return attack_list
+        return self.active_pockemon.candidate_attacks()
 
     def attack(self, attack: None | PockemonAttack):
         if attack is None:
@@ -154,14 +152,49 @@ class Player:
         # 特性を使う
         self.use_feature_select()
         # 逃げる
-        # self.retreat_select()
+        self.retreat_select()
         # 攻撃する or ターン終了
-        # self.attack_select()
-        pass
+        self.attack_select()
+        return
+
+    def attack_select(self):
+        attack_list = self.candidate_attack()
+        selection = {}
+        action = {}
+        selection[len(selection)] = "ターンを終了する"
+        action[len(action)] = lambda: None
+        for i, attack in enumerate(attack_list):
+            selection[len(selection)] = f"{attack}を使う"
+            action[len(action)] = lambda attack=attack: self.attack(attack)
+
+        i = self.select_action(selection, action)
+        action[i]()
 
     def use_feature_select(self):
         for card in [self.active_pockemon] + self.bench:
-            card.feature_active(self.game)
+            card.feature_active()
+
+        return
+
+    def retreat(self, card: PockemonCard):
+        assert card in self.bench
+        self.bench[self.bench.index(card)], self.active_pockemon = (
+            self.active_pockemon,
+            card,
+        )
+        logger.debug(f"{self}が{card}をアクティブに出した")
+
+    def retreat_select(self):
+        selection = {}
+        action = {}
+        selection[len(selection)] = "逃げない"
+        action[len(action)] = lambda: None
+        for i, card in enumerate(self.bench):
+            selection[len(selection)] = f"{card}をアクティブに出す"
+            action[len(action)] = lambda card=card: self.retreat(card)
+
+        i = self.select_action(selection, action)
+        action[i]()
 
     def evolve_select(self):
         # 進化するポケモンを選ぶ

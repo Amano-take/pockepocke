@@ -92,9 +92,6 @@ class PockemonCard(Card):
         else:
             self.next_pockemon = None
 
-        if hasattr(self.__class__, "feature_active"):
-            self.feature_active = self.__class__.feature_active
-
         # is_exがあるならば設定
         if hasattr(self.__class__, "is_ex"):
             self.is_ex = self.__class__.is_ex
@@ -156,6 +153,9 @@ class PockemonCard(Card):
 
     def enter_battle(self):
         self.feature_passive()
+
+    def feature_active(self):
+        pass
 
     def feature_passive(self):
         pass
