@@ -82,7 +82,7 @@ class Player:
     def prepare(self):
         # active_pockemonを選ぶ
         selection = {}
-        candidates = {}
+        action = {}
         manage_duplicates = set()
         for i, card in enumerate(self.hand_pockemon):
             assert isinstance(card, PockemonCard)
@@ -91,9 +91,9 @@ class Player:
                     continue
                 manage_duplicates.add(card.name)
                 selection[len(selection)] = f"{card.name}をバトル場に出す"
-                candidates[len(candidates)] = i
+                action[len(action)] = lambda card=card: self.prepare_active_pockemon(card)
         i = self.select_action(selection)
-        self.active_pockemon = self.hand_pockemon.pop(candidates[i])
+        action[i]()
 
         # benchを選ぶ
         selection_list = []
@@ -103,7 +103,7 @@ class Player:
                 selection_list.append(i)
 
         selection = {}
-        candidates = {}
+        action = {}
         manage_duplicates = set()
         for i in range(0, min(3, len(selection_list)) + 1):
             for comb in combinations(selection_list, i):
@@ -118,16 +118,13 @@ class Player:
                 selection[len(selection)] = (
                     f"{[self.hand_pockemon[j].name for j in comb]}をベンチに出す"
                 )
-                candidates[len(candidates)] = comb
+                action[len(action)] = lambda comb=comb: [
+                    self.prepare_bench_pockemon(self.hand_pockemon[j]) for j in comb
+                ]
 
         i = self.select_action(selection)
-        for j in candidates[i]:
-            self.bench.append(self.hand_pockemon[j])
-
-        # comb番目を手札から削除
-        for j in sorted(candidates[i], reverse=True):
-            self.hand_pockemon.pop(j)
-
+        action[i]()
+        
         logger.debug(f"{self}が{self.active_pockemon}をアクティブに出した")
         logger.debug(f"{self}が{self.bench}をベンチに出した")
         logger.debug(f"手札ポケモン: {self.hand_pockemon}")
@@ -261,7 +258,7 @@ class Player:
 
         # それぞれ使うか使わないか,2**len(goods_cards)通り
         selection = {}
-        candidates: dict[int, list[GoodsCard]] = {}
+        action = {}
         manage_duplicates = set()
         for i in range(2 ** len(goods_cards)):
             use_goods: list[GoodsCard] = []
@@ -272,12 +269,13 @@ class Player:
                 continue
             manage_duplicates.add(tuple(sorted([card.name for card in use_goods])))
             selection[len(selection)] = f"{[card.name for card in use_goods]}を使う"
-            candidates[len(candidates)] = use_goods
+            action[len(action)] = lambda use_goods=use_goods: [
+                card.use(self.game) for card in use_goods
+            ]
 
         i = self.select_action(selection)
-        for card in candidates[i]:
-            card.use(self.game)
-            logger.debug(f"{self}が{card}を使った")
+        action[i]()
+        logger.debug(f"{self}が{selection[i]}を使った")
 
     def use_trainer(self):
         trainer_cards: list[TrainerCard] = []
@@ -287,12 +285,12 @@ class Player:
 
         # 使用するかどうかの選択肢
         selection = {}
-        candidates: dict[int, list[TrainerCard]] = {}
+        action = {}
         manage_duplicates = set()
 
         # 使用しない選択肢を追加
         selection[len(selection)] = "トレーナーカードを使用しない"
-        candidates[len(candidates)] = []
+        action[len(action)] = lambda: None
 
         # 各トレーナーカード単体での使用
         for card in trainer_cards:
@@ -300,12 +298,10 @@ class Player:
                 continue
             manage_duplicates.add(card.name)
             selection[len(selection)] = f"{card.name}を使う"
-            candidates[len(candidates)] = [card]
+            action[len(action)] = lambda card=card: card.use(self.game)
 
         i = self.select_action(selection)
-        for card in candidates[i]:
-            card.use(self.game)
-            logger.debug(f"{self}が{card}を使った")
+        action[i]()
 
     def use_pockemon_select(self):
         # benchを選ぶ
@@ -316,7 +312,7 @@ class Player:
                 selection_list.append(i)
 
         selection = {}
-        candidates = {}
+        action = {}
         manage_duplicates = set()
         for i in range(0, min(3 - len(self.bench), len(selection_list)) + 1):
             for comb in combinations(selection_list, i):
@@ -331,18 +327,12 @@ class Player:
                 selection[len(selection)] = (
                     f"{[self.hand_pockemon[j].name for j in comb]}をベンチに出す"
                 )
-                candidates[len(candidates)] = comb
+                action[len(action)] = lambda comb=comb: [
+                    self.prepare_bench_pockemon(self.hand_pockemon[j]) for j in comb
+                ]
 
         i = self.select_action(selection)
-        for j in candidates[i]:
-            self.bench.append(self.hand_pockemon[j])
-
-        for j in sorted(candidates[i], reverse=True):
-            self.hand_pockemon.pop(j)
-
-        # comb番目を手札から削除
-        for j in sorted(candidates[i], reverse=True):
-            self.hand_pockemon.pop(j)
+        action[i]()
 
         logger.debug(f"{self}が{self.active_pockemon}をアクティブに出した")
 
