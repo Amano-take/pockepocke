@@ -71,10 +71,9 @@ class PockemonAttack:
 
 
 class PockemonCard(Card):
-    def __init__(self, player: Player = None, game: Game = None):
+    def __init__(self):
         self.name = self.__class__.__name__
-        self.energies = AttachedEnergies(player)
-        self.game = game
+        self.energies = AttachedEnergies()
 
         # 以下設定が必要
         self.hp = self.__class__.hp
@@ -92,6 +91,9 @@ class PockemonCard(Card):
             self.next_pockemon = self.__class__.next_pockemon
         else:
             self.next_pockemon = None
+
+        if hasattr(self.__class__, "feature_active"):
+            self.feature_active = self.__class__.feature_active
 
         # is_exがあるならば設定
         if hasattr(self.__class__, "is_ex"):
@@ -113,6 +115,7 @@ class PockemonCard(Card):
 
     def set_player(self, player: Player, otherwise: Player):
         self.player = player
+        self.energies.set_player(player)
         self.otherwise = otherwise
         self.game = player.game
 
@@ -152,6 +155,12 @@ class PockemonCard(Card):
         return self.leave_battle()
 
     def enter_battle(self):
+        self.feature_passive()
+
+    def feature_passive(self):
+        pass
+
+    def reset_feature_passive(self):
         pass
 
     def leave_battle(self):
@@ -160,6 +169,8 @@ class PockemonCard(Card):
             True ゲームを続ける
             False ゲーム終了
         """
+        self.reset_feature_passive()
+
         if self.is_ex:
             self.otherwise.sides += 2
         else:

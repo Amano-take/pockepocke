@@ -27,6 +27,9 @@ class AttachedEnergies:
         else:
             self.energy_values = [1] * len(Energy)
 
+    def set_player(self, player: Player):
+        self.energy_values = player.energy_values
+
     def attach_energy(self, energy: Energy):
         self.energies[energy.value] += 1
 
@@ -41,7 +44,10 @@ class AttachedEnergies:
         return self.energies[key] * self.energy_values[key]
 
     def get_sum(self):
-        return sum(self.energies[key] * self.energy_values[key] for key in range(len(self.energies)))
+        return sum(
+            self.energies[key] * self.energy_values[key]
+            for key in range(len(self.energies))
+        )
 
     def __str__(self):
         ret = ""

@@ -51,8 +51,10 @@ def test_prepare():
 
 
 def test_energy():
-    selevi_player1 = Selevi(player1)
-    selevi_player2 = Selevi(player2)
+    selevi_player1 = Selevi()
+    selevi_player1.set_player(player1, player2)
+    selevi_player2 = Selevi()
+    selevi_player2.set_player(player2, player1)
 
     selevi_player1.attach_energy(Energy.GRASS)
     selevi_player2.attach_energy(Energy.GRASS)
@@ -133,7 +135,7 @@ def test_attack_pikachu():
 
     game.active_player = player1
     game.waiting_player = player2
-    
+
     player1.attack(player1_pickachu1.attacks[0])
 
     assert player1.sides == 2

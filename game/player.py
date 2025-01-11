@@ -62,12 +62,14 @@ class Player:
 
     def prepare_active_pockemon(self, card: PockemonCard):
         self.active_pockemon = card
+        card.enter_battle()
         self.hand_pockemon.remove(card)
 
     def prepare_bench_pockemon(self, card: PockemonCard):
         self.bench.append(card)
+        card.enter_battle()
         self.hand_pockemon.remove(card)
-        
+
     def prepare_active_pockemon_from_bench(self, card: PockemonCard):
         assert card in self.bench
         self.bench.remove(card)
@@ -96,7 +98,9 @@ class Player:
                     continue
                 manage_duplicates.add(card.name)
                 selection[len(selection)] = f"{card.name}をバトル場に出す"
-                action[len(action)] = lambda card=card: self.prepare_active_pockemon(card)
+                action[len(action)] = lambda card=card: self.prepare_active_pockemon(
+                    card
+                )
         i = self.select_action(selection, action)
         action[i]()
 
@@ -129,7 +133,7 @@ class Player:
 
         i = self.select_action(selection, action)
         action[i]()
-        
+
         logger.debug(f"{self}が{self.active_pockemon}をアクティブに出した")
         logger.debug(f"{self}が{self.bench}をベンチに出した")
         logger.debug(f"手札ポケモン: {self.hand_pockemon}")
@@ -147,11 +151,17 @@ class Player:
         self.evolve_select()
         # エネルギーをつける
         self.attach_energy_select()
+        # 特性を使う
+        self.use_feature_select()
         # 逃げる
         # self.retreat_select()
         # 攻撃する or ターン終了
         # self.attack_select()
         pass
+
+    def use_feature_select(self):
+        for card in [self.active_pockemon] + self.bench:
+            card.feature_active(self.game)
 
     def evolve_select(self):
         # 進化するポケモンを選ぶ
@@ -350,7 +360,9 @@ class Player:
         action = {}
         for i, card in enumerate(self.bench):
             selection[len(selection)] = f"{card}をアクティブに出す"
-            action[len(action)] = lambda card=card: self.prepare_active_pockemon_from_bench(card)
+            action[len(action)] = (
+                lambda card=card: self.prepare_active_pockemon_from_bench(card)
+            )
 
         choice = self.select_action(selection, action)
         action[choice]()
@@ -358,7 +370,9 @@ class Player:
         logger.debug(f"{self}が{self.active_pockemon}をアクティブに出した")
 
     # 選択肢を受け取り行動を選択する。今のところはinput()で選択することに、ここをAI化するのが目標
-    def select_action(self, selection: dict[int, str], action: dict[int, callable] = {}):
+    def select_action(
+        self, selection: dict[int, str], action: dict[int, callable] = {}
+    ):
         if len(selection) == 1:
             return 0
         logger.info("選択してください")

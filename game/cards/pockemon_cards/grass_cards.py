@@ -85,6 +85,16 @@ class Jaroda(PockemonCard):
 
     attacks = [TsuruNoMuchi()]
 
+    def feature_passive(self):
+        self.player.energy_values[Energy.GRASS] = 2
+
+    def reset_feature_passive(self):
+        for card in [self.player.active_pockemon] + self.player.bench:
+            if card and card.name == "Jaroda" and card != self:
+                card.player.energy_values[Energy.GRASS] = 2
+            else:
+                card.player.energy_values[Energy.GRASS] = 1
+
 
 class Nemashu(PockemonCard):
     hp = 60
