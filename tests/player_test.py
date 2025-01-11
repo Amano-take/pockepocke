@@ -133,7 +133,7 @@ def test_attack_pikachu():
 
     game.active_player = player1
     game.waiting_player = player2
-
+    
     player1.attack(player1_pickachu1.attacks[0])
 
     assert player1.sides == 2
