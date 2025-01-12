@@ -61,13 +61,16 @@ class PockemonAttack:
 
         return True
 
+    def target_list(self, game: Game) -> list[PockemonCard]:
+        return [game.waiting_player.active_pockemon]
+
     def set_type(self, type_: PockemonType):
         self.attack_type = type_
 
-    def attack(self, game: Game, plus_damage=0):
-        game.waiting_player.active_pockemon.get_damage(
-            self.damage + plus_damage, self.attack_type
-        )
+    def attack(self, game: Game, target_pockemon: PockemonCard = None, plus_damage=0):
+        if target_pockemon is None:
+            target_pockemon = game.waiting_player.active_pockemon
+        target_pockemon.get_damage(self.damage + plus_damage, self.attack_type)
 
 
 class PockemonCard(Card):

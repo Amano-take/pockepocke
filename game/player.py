@@ -78,10 +78,15 @@ class Player:
     def candidate_attack(self):
         return self.active_pockemon.candidate_attacks()
 
-    def attack(self, attack: None | PockemonAttack):
+    def attack(self, attack: None | PockemonAttack, target: PockemonCard = None):
         if attack is None:
             return
-        attack.attack(self.game)
+        if target is None:
+            target = self.opponent.active_pockemon
+        if target is not self.opponent.active_pockemon:
+            attack.attack(self.game, target)
+        else:
+            attack.attack(self.game)
 
     # 準備ターンの行動
     def prepare(self):
@@ -149,7 +154,7 @@ class Player:
         self.use_pockemon_select()
         # エネルギーをつける
         self.attach_energy_select()
-        # 特性を使う
+        # 特性を使う　# TODO: 対象指定が必要な特性
         self.use_feature_select()
         # 逃げる
         self.retreat_select()
@@ -164,8 +169,11 @@ class Player:
         selection[len(selection)] = "ターンを終了する"
         action[len(action)] = lambda: None
         for i, attack in enumerate(attack_list):
-            selection[len(selection)] = f"{attack}を使う"
-            action[len(action)] = lambda attack=attack: self.attack(attack)
+            for target in attack.target_list(self.game):
+                selection[len(selection)] = f"{attack}を{target.name}使う"
+                action[len(action)] = lambda attack=attack, target=target: self.attack(
+                    attack, target
+                )
 
         i = self.select_action(selection, action)
         action[i]()
