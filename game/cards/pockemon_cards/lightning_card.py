@@ -88,21 +88,10 @@ class Zeburaika(PockemonCard):
         damage = 30
         required_energy = RequiredEnergy([Energy.LIGHTNING], 0)
 
-        def attack(self, game: Game):
-            selection = {}
-            candidates: dict[int, PockemonCard] = {}
-            pockemons = [
-                game.waiting_player.active_pockemon
-            ] + game.waiting_player.bench
-            for i, pockemon in enumerate(pockemons):
-                selection[i] = f"{pockemon}に30ダメージ"
-                candidates[i] = pockemon
-
-            i = game.active_player.select_action(selection)
-            if i == 0:
-                candidates[i].get_damage(30, PockemonType.LIGHTNING)
-            else:
-                candidates[i].get_damage(30, None)
+        def attack(self, game: Game, target_pockemon: PockemonCard = None):
+            if target_pockemon is None:
+                target_pockemon = game.waiting_player.active_pockemon
+            super().attack(game, target_pockemon)
 
         def target_list(self, game):
             return [game.waiting_player.active_pockemon] + game.waiting_player.bench

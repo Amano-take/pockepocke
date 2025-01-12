@@ -251,10 +251,14 @@ class Player:
                 if card is self.active_pockemon:
                     self.active_pockemon = hand
                     hand.hp = hand.max_hp - damage
+                    # energyも引き継ぐ
+                    hand.energies = card.energies
                     logger.debug(f"{self}がactiveな{card.name}を{hand}へ進化させた")
                 else:
                     self.bench[self.bench.index(card)] = hand
                     hand.hp = hand.max_hp - damage
+                    # energyも引き継ぐ
+                    hand.energies = card.energies
                     logger.debug(f"{self}がbenchの{card.name}を{hand}へ進化させた")
                 self.hand_pockemon.remove(hand)
                 return True

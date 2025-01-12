@@ -151,7 +151,11 @@ class PockemonCard(Card):
     def get_damage(self, damage: int, enemy_type: PockemonType = None):
         if damage < 0:
             return True
-        if enemy_type is not None and enemy_type == self.weakness:
+        if (
+            enemy_type is not None
+            and enemy_type == self.weakness
+            and self.player.active_pockemon is self
+        ):
             damage += 20
         self.hp -= damage
         if self.hp > 0:

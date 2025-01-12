@@ -168,6 +168,34 @@ def test_attack_pikachu():
         player1.attack(player1_pickachu2.attacks[0])
 
 
+def test_attack_shimama():
+    game, player1, player2 = set_lightning()
+    player1.draw(20)
+    player2.draw(20)
+    player1_shimama1, player1_shimama2 = (
+        player1.hand_pockemon[4],
+        player1.hand_pockemon[5],
+    )
+    player1_zeburaika1 = player1.hand_pockemon[6]
+    player1.prepare_active_pockemon(player1_shimama1)
+    player1.prepare_bench_pockemon(player1_shimama2)
+    player2.prepare_active_pockemon(player2.hand_pockemon[0])
+    player2.prepare_bench_pockemon(player2.hand_pockemon[1])
+    game.active_player = player1
+    game.waiting_player = player2
+
+    player1.active_pockemon.attach_energy(Energy.LIGHTNING)
+    player1.active_pockemon.attach_energy(Energy.LIGHTNING)
+    player1.evolve(player1_shimama1)
+    assert player1.active_pockemon is player1_zeburaika1
+
+    with patch.object(player1, "select_action", return_value=2) as mock:
+        assert player2.bench[0].hp == player2.bench[0].max_hp
+        player1.attack_select()
+        assert len(mock.call_args[0][0]) == 3
+        assert player2.bench[0].hp == player2.bench[0].max_hp - 30
+
+
 def test_select_bench():
     game, player1, player2 = set_lightning()
     player1.draw(7)
