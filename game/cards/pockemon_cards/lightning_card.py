@@ -40,7 +40,9 @@ class ThunderEX(PockemonCard):
     # ハリケーンサンダー
     class HurricaneThunder(PockemonAttack):
         damage = 0
-        required_energy = RequiredEnergy([Energy.LIGHTNING, Energy.LIGHTNING, Energy.LIGHTNING], 0)
+        required_energy = RequiredEnergy(
+            [Energy.LIGHTNING, Energy.LIGHTNING, Energy.LIGHTNING], 0
+        )
 
         def attack(self, game: Game):
             count = 0
@@ -89,7 +91,9 @@ class Zeburaika(PockemonCard):
         def attack(self, game: Game):
             selection = {}
             candidates: dict[int, PockemonCard] = {}
-            pockemons = [game.waiting_player.active_pockemon] + game.waiting_player.bench
+            pockemons = [
+                game.waiting_player.active_pockemon
+            ] + game.waiting_player.bench
             for i, pockemon in enumerate(pockemons):
                 selection[i] = f"{pockemon}に30ダメージ"
                 candidates[i] = pockemon
@@ -99,6 +103,9 @@ class Zeburaika(PockemonCard):
                 candidates[i].get_damage(30, PockemonType.LIGHTNING)
             else:
                 candidates[i].get_damage(30, None)
+
+        def target_list(self, game):
+            return [game.waiting_player.active_pockemon] + game.waiting_player.bench
 
     attacks = [
         ThunderArrow(),
