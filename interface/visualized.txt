@@ -1,18 +1,17 @@
-player22
-sides: 0
-current_energy: grass
-energy_value: [1, 1, 1, 1, 1, 1, 1, 1]
-hand: [KizuGusuri, Speeder], [<game.cards.pockemon_cards.lightning_card.Zeburaika object at 0x0000022BDA3D2350>], [Natsume, Natsume]
-bench: [<game.cards.pockemon_cards.lightning_card.Zeburaika object at 0x0000022BDA3B2B10>]
-active: name: PikachuEX   hp: 120   type: lightning   weakness: fighting   retreat_cost: 1   attached_energies: 
-
---------------------
-player52
+player1
 sides: 0
 current_energy: None
 energy_value: [1, 1, 1, 1, 1, 1, 1, 1]
-hand: [MonsterBall], [<game.cards.pockemon_cards.lightning_card.Zeburaika object at 0x0000022BDA3CE690>], [Natsume, Natsume]
-bench: [<game.cards.pockemon_cards.lightning_card.PikachuEX object at 0x0000022BDA3B3360>, <game.cards.pockemon_cards.lightning_card.PikachuEX object at 0x0000022BDA3CDEB0>]
-active: name: ThunderEX   hp: 130   type: lightning   weakness: lightning   retreat_cost: 1   attached_energies: fire: 1
+hand: [MonsterBall, MonsterBall], [], [Natsume]
+bench: [<game.cards.pockemon_cards.lightning_card.Shimama object at 0x000001D7B27E9E00>]
+active: name: Shimama   hp: 60   type: lightning   weakness: fighting   retreat_cost: 1   attached_energies: 
 
+--------------------
+rulebase
+sides: 0
+current_energy: None
+energy_value: [1, 1, 1, 1, 1, 1, 1, 1]
+hand: [], [<game.cards.pockemon_cards.lightning_card.Zeburaika object at 0x000001D7B2901D50>, <game.cards.pockemon_cards.lightning_card.ThunderEX object at 0x000001D7B2901E50>, <game.cards.pockemon_cards.lightning_card.Shimama object at 0x000001D7B2901F50>], [HakaseResearcher, Natsume]
+bench: []
+active: name: PikachuEX   hp: 120   type: lightning   weakness: fighting   retreat_cost: 1   attached_energies: 
 

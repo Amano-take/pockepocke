@@ -65,6 +65,10 @@ class Player:
         card.enter_battle()
         self.hand_pockemon.remove(card)
 
+    def reverse_prepare_active_pockemon(self, card: PockemonCard):
+        self.active_pockemon = None
+        self.hand_pockemon.append(card)
+
     def prepare_bench_pockemon(self, card: PockemonCard):
         self.bench.append(card)
         card.enter_battle()
@@ -131,7 +135,8 @@ class Player:
                     f"{[self.hand_pockemon[j].name for j in comb]}をベンチに出す"
                 )
                 action[len(action)] = lambda comb=comb: [
-                    self.prepare_bench_pockemon(self.hand_pockemon[j]) for j in comb
+                    self.prepare_bench_pockemon(self.hand_pockemon[j])
+                    for j in reversed(comb)
                 ]
 
         i = self.select_action(selection, action)
@@ -455,7 +460,9 @@ class Player:
 
     # 選択肢を受け取り行動を選択する。今のところはinput()で選択することに、ここをAI化するのが目標
     def select_action(
-        self, selection: dict[int, str], action: dict[int, callable] = {}
+        self,
+        selection: dict[int, str],
+        action: dict[int, callable] = {},
     ):
         if len(selection) == 1:
             return 0

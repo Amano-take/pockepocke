@@ -1,21 +1,23 @@
-import threading
+import threading, signal
 import time
 import sys, os
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from game import *
+from AI.rulebase_player import RuleBasePlayer
 
 
 class Visualizer:
     def __init__(self):
         self.game = Game()
+        self.stop_event = threading.Event()
 
     def set_players(self, player1: Player, player2: Player):
         self.game.set_players(player1, player2)
 
     def visualize(self):
         with open("./interface/visualized.txt", "w") as f:
-            while True:
+            while not self.stop_event.is_set():
                 f.seek(0)
                 f.truncate()
                 f.write(str(self.game.player1) + "\n")
@@ -60,6 +62,11 @@ class Visualizer:
                 time.sleep(1)
 
     def start(self):
+        def signal_handler(signal, frame):
+            self.stop_event.set()
+            sys.exit(0)
+
+        signal.signal(signal.SIGINT, signal_handler)
         thread1 = threading.Thread(target=self.game.start, daemon=True)
         thread2 = threading.Thread(target=self.visualize, daemon=True)
         thread1.start()
@@ -75,7 +82,8 @@ if __name__ == "__main__":
     deck = lightning_deck()
 
     player1 = Player(Deck(deck), [Energy.LIGHTNING])
-    player2 = Player(Deck(deck), [Energy.LIGHTNING])
-
+    player1.name = "player1"
+    player2 = RuleBasePlayer(Deck(deck), [Energy.LIGHTNING])
+    player2.name = "rulebase"
     visualizer.set_players(player1, player2)
     visualizer.start()
