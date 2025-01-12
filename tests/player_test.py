@@ -103,6 +103,7 @@ def test_use_goods():
 
 
 def test_attack_pikachu():
+    game, player1, player2 = set_lightning()
     player1.draw(7)
     player2.draw(7)
     player1_pickachu1, player1_pickachu2 = (
