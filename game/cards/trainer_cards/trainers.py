@@ -16,6 +16,9 @@ class TrainerCard(Card):
         game.active_player.hand_trainer.remove(self)
         game.active_player.trash.append(self)
 
+    def can_use(self, game: Game):
+        return True
+
     def __str__(self):
         return self.name
 

@@ -27,7 +27,7 @@ class Player:
         self.energy_values = [1] * len(Energy)
         self.hand_pockemon: list[PockemonCard] = []
         self.hand_goods: list[GoodsCard] = []
-        self.hand_trainer = []
+        self.hand_trainer: list[TrainerCard] = []
         self.bench: list[PockemonCard] = []
         self.active_pockemon = None
         self.sides = 0
@@ -293,43 +293,78 @@ class Player:
         self.attack_buff = value
 
     def retreat_buff(self, value: int):
-        self.retreat_buff = value
+        self.retreat_cost_buff = value
 
     def use_goods(self):
+        # ex. [[(kizugusuri, active), (kizugusuri, bench1)], (redcard), ...]
         goods_cards: list[GoodsCard] = []
         for card in self.hand_goods[:]:
             if card.name == "MonsterBall":
                 card.use(self.game)
                 logger.debug(f"{self}が{card}を使った")
-            elif card.can_use(self.game):
-                goods_cards.append(card)
+            elif use_list := card.can_use(self.game):
+                # 対象なし
+                if use_list is True:
+                    goods_cards.append(card)
+                # 対象あり
+                else:
+                    goods_cards.append([(card, pockemon) for pockemon in use_list])
 
-        # それぞれ使うか使わないか,2**len(goods_cards)通り
+        # それぞれ使うか使わないか,2**len(goods_cards)通り * 対象の選択肢
         selection = {}
         action = {}
         manage_duplicates = set()
         for i in range(2 ** len(goods_cards)):
-            use_goods: list[GoodsCard] = []
+            use_goods_list: list[list[tuple[GoodsCard, PockemonCard]]] = [[]]
             for j, card in enumerate(goods_cards):
+                card: GoodsCard | list[tuple[GoodsCard, PockemonCard]]
                 if (i >> j) & 1:
-                    use_goods.append(card)
-            if tuple(sorted([card.name for card in use_goods])) in manage_duplicates:
-                continue
-            manage_duplicates.add(tuple(sorted([card.name for card in use_goods])))
-            selection[len(selection)] = f"{[card.name for card in use_goods]}を使う"
-            action[len(action)] = lambda use_goods=use_goods: [
-                card.use(self.game) for card in use_goods
-            ]
+                    if isinstance(card, GoodsCard):
+                        for use_goods in use_goods_list:
+                            use_goods.append((card, None))
+                    else:
+                        temp_list = []
+                        for goods, pockemon in card:
+                            for use_goods in use_goods_list:
+                                use_goods = use_goods[:]
+                                use_goods.append((goods, pockemon))
+                                temp_list.append(use_goods)
+                        use_goods_list = temp_list
+
+            for use_goods in use_goods_list:
+                if (
+                    sorted_name := tuple(
+                        sorted(
+                            [(card.name, id(pockemon)) for card, pockemon in use_goods]
+                        )
+                    )
+                ) in manage_duplicates:
+                    continue
+                manage_duplicates.add(sorted_name)
+                selection[len(selection)] = (
+                    f"{[(card.name + 'を' + pockemon.name + 'に' if isinstance(pockemon, PockemonCard) else card.name) for card, pockemon in use_goods]}"
+                )
+                action[len(action)] = lambda use_goods=use_goods: [
+                    (
+                        card.use(self.game, pockemon)
+                        if isinstance(pockemon, PockemonCard)
+                        else card.use(self.game)
+                    )
+                    for card, pockemon in use_goods
+                ]
 
         i = self.select_action(selection, action)
         action[i]()
         logger.debug(f"{self}が{selection[i]}を使った")
 
     def use_trainer(self):
-        trainer_cards: list[TrainerCard] = []
-        for card in self.hand_trainer[:]:
-            if card.can_use(self.game):
-                trainer_cards.append(card)
+        trainer_cards: list[tuple[TrainerCard, PockemonCard | None]] = []
+        for card in self.hand_trainer:
+            if use_list := card.can_use(self.game):
+                if use_list is True:
+                    trainer_cards.append((card, None))
+                else:
+                    trainer_cards.append([(card, pockemon) for pockemon in use_list])
 
         # 使用するかどうかの選択肢
         selection = {}
@@ -341,12 +376,16 @@ class Player:
         action[len(action)] = lambda: None
 
         # 各トレーナーカード単体での使用
-        for card in trainer_cards:
-            if card.name in manage_duplicates:
+        for card, target in trainer_cards:
+            if (card.name, id(target)) in manage_duplicates:
                 continue
-            manage_duplicates.add(card.name)
-            selection[len(selection)] = f"{card.name}を使う"
-            action[len(action)] = lambda card=card: card.use(self.game)
+            manage_duplicates.add((card.name, id(target)))
+            selection[len(selection)] = (
+                f"{card.name}を{target.name}に使う" if target else f"{card.name}を使う"
+            )
+            action[len(action)] = lambda card=card, target=target: (
+                card.use(self.game, target) if target else card.use(self.game)
+            )
 
         i = self.select_action(selection, action)
         action[i]()

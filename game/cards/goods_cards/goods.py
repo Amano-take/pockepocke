@@ -23,14 +23,30 @@ class GoodsCard(Card):
 
 
 class KizuGusuri(GoodsCard):
-    def use(self, game: Game):
-        game.active_player.active_pockemon.hp += 20
+    def use(self, game: Game, target: PockemonCard):
+        target.heal(20)
         super().use(game)
+
+    def can_use(self, game: Game):
+        """
+        使えるポケモンの候補を返す
+        """
+        res = []
+        for pockemon in [game.active_player.active_pockemon] + game.active_player.bench:
+            if pockemon.hp < pockemon.max_hp:
+                res.append(pockemon)
+
+        if len(res) == 0:
+            return False
+
+        return res
 
 
 class MonsterBall(GoodsCard):
     def use(self, game: Game):
-        game.active_player.hand_pockemon.append(game.active_player.deck.draw_seed_pockemon())
+        game.active_player.hand_pockemon.append(
+            game.active_player.deck.draw_seed_pockemon()
+        )
         super().use(game)
 
 
@@ -76,6 +92,8 @@ class PockemonnoHue(GoodsCard):
     def can_use(self, game: Game):
         if len(game.waiting_player.bench) == 3:
             return False
+        else:
+            return True
 
 
 class MaboroshinoSekibann(GoodsCard):

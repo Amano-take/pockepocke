@@ -72,12 +72,34 @@ def test_use_goods():
     game.active_player = player1
     game.waiting_player = player2
     player1.draw(20)
+    player1_pickachu1, player1_pickachu2 = (
+        player1.hand_pockemon[0],
+        player1.hand_pockemon[1],
+    )
+    player1_thunder1, player1_thunder2 = (
+        player1.hand_pockemon[2],
+        player1.hand_pockemon[3],
+    )
+    player1.prepare_active_pockemon(player1_pickachu1)
+    player1.prepare_bench_pockemon(player1_pickachu2)
+    player1.prepare_bench_pockemon(player1_thunder1)
+    player1.prepare_bench_pockemon(player1_thunder2)
+    for pockemon in [player1.active_pockemon] + player1.bench:
+        pockemon.hp = 50
 
     assert len(player1.hand_goods) == 6
-    with patch.object(player1, "select_action", return_value=0) as mock:
+    with patch.object(player1, "select_action", return_value=44) as mock:
         player1.use_goods()
         # 引数のselectionのlenが18であることを確認
-        assert len(mock.call_args[0][0]) == 9
+        assert len(mock.call_args[0][0]) == 45
+        sum_hp = 0
+        for pockemon in [player1.active_pockemon] + player1.bench:
+            sum_hp += pockemon.hp
+        assert sum_hp == 50 * 4 + 40
+
+    # reset hp
+    for pockemon in [player1.active_pockemon] + player1.bench:
+        pockemon.hp = pockemon.max_hp
 
 
 def test_attack_pikachu():

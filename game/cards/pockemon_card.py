@@ -110,10 +110,10 @@ class PockemonCard(Card):
         # 状態設定
         self.status = PockemonStatus.NORMAL
 
-    def set_player(self, player: Player, otherwise: Player):
+    def set_player(self, player: Player, opponent: Player):
         self.player = player
         self.energies.set_player(player)
-        self.otherwise = otherwise
+        self.opponent = opponent
         self.game = player.game
 
     def can_attack(self, attack: PockemonAttack | int):
@@ -133,6 +133,11 @@ class PockemonCard(Card):
 
     def attack(self, attack: PockemonAttack):
         attack.attack(self.game)
+
+    def heal(self, heal: int):
+        self.hp += heal
+        if self.hp > self.max_hp:
+            self.hp = self.max_hp
 
     def attach_energy(self, energy: Energy):
         self.energies.attach_energy(energy)
@@ -172,20 +177,20 @@ class PockemonCard(Card):
         self.reset_feature_passive()
 
         if self.is_ex:
-            self.otherwise.sides += 2
+            self.opponent.sides += 2
         else:
-            self.otherwise.sides += 1
+            self.opponent.sides += 1
 
         # ゲームの終了判定
-        if len(self.otherwise.bench) == 0:
-            self.game.winner = self.otherwise
+        if len(self.opponent.bench) == 0:
+            self.game.winner = self.opponent
             self.game.loser = self.player
-            raise GameOverException("勝利プレイヤー: " + str(self.otherwise))
+            raise GameOverException("勝利プレイヤー: " + str(self.opponent))
 
-        if self.otherwise.sides >= 3:
-            self.game.winner = self.otherwise
+        if self.opponent.sides >= 3:
+            self.game.winner = self.opponent
             self.game.loser = self.player
-            raise GameOverException("勝利プレイヤー: " + str(self.otherwise))
+            raise GameOverException("勝利プレイヤー: " + str(self.opponent))
 
         self.player.select_bench()
         return

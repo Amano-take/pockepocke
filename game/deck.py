@@ -33,8 +33,8 @@ class Deck:
     def set_player(self, player: Player):
         self.player = player
         for card in self.cards:
-            if isinstance(card, PockemonCard):
-                card.set_player(player, player.opponent)
+            card.set_player(player, player.opponent)
+            card.set_game(player.game)
 
     def shuffle(self):
         random.shuffle(self.cards)
