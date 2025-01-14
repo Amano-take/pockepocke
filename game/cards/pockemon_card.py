@@ -52,11 +52,7 @@ class PockemonAttack:
             if self.required_energy.energies[i] > energies.energies[i]:
                 return False
 
-        if (
-            energies.get_sum()
-            < sum(self.required_energy.energies)
-            + self.required_energy.number_any_energy
-        ):
+        if energies.get_sum() < sum(self.required_energy.energies) + self.required_energy.number_any_energy:
             return False
 
         return True
@@ -113,6 +109,9 @@ class PockemonCard(Card):
         # 状態設定
         self.status = PockemonStatus.NORMAL
 
+        # super
+        super().__init__()
+
     def set_player(self, player: Player, opponent: Player):
         self.player = player
         self.energies.set_player(player)
@@ -151,11 +150,7 @@ class PockemonCard(Card):
     def get_damage(self, damage: int, enemy_type: PockemonType = None):
         if damage < 0:
             return True
-        if (
-            enemy_type is not None
-            and enemy_type == self.weakness
-            and self.player.active_pockemon is self
-        ):
+        if enemy_type is not None and enemy_type == self.weakness and self.player.active_pockemon is self:
             damage += 20
         self.hp -= damage
         if self.hp > 0:

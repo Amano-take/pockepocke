@@ -8,6 +8,7 @@ from game.utils import coin_toss
 class TrainerCard(Card):
     def __init__(self):
         self.name = self.__class__.__name__
+        super().__init__()
 
     def can_use(self, game: Game):
         return True

@@ -7,6 +7,7 @@ from game.cards.pockemon_card import PockemonType
 class GoodsCard(Card):
     def __init__(self):
         self.name = self.__class__.__name__
+        super().__init__()
 
     def can_use(self, game: Game):
         return True
@@ -44,9 +45,7 @@ class KizuGusuri(GoodsCard):
 
 class MonsterBall(GoodsCard):
     def use(self, game: Game):
-        game.active_player.hand_pockemon.append(
-            game.active_player.deck.draw_seed_pockemon()
-        )
+        game.active_player.hand_pockemon.append(game.active_player.deck.draw_seed_pockemon())
         super().use(game)
 
 
