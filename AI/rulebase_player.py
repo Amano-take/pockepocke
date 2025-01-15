@@ -41,10 +41,14 @@ class RuleBasePlayer(Player):
                     current_attr.update(value)
                 elif isinstance(current_attr, Game):
                     pass
+                elif isinstance(current_attr, Player):
+                    pass
                 else:
                     setattr(self, key, value)
 
-    def select_action(self, selection: Dict[int, str], action: Dict[int, Callable] = {}) -> int:
+    def select_action(
+        self, selection: Dict[int, str], action: Dict[int, Callable] = {}
+    ) -> int:
         """RuleBaseによる自動選択"""
         if len(selection) == 1:
             return 0
@@ -55,6 +59,7 @@ class RuleBasePlayer(Player):
 
         scores = {}
         for key in selection.keys():
+            # TODO: 相手の行動が必要なactionの場合バグの発生
             action[key]()
             scores[key] = self.calculate_action_score()
             self.load_pkl()

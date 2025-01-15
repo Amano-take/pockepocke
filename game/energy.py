@@ -13,7 +13,7 @@ class Energy(Enum):
     METAL = 7
 
     def __str__(self):
-        return self.name.lower()
+        return self.name
 
     def __repr__(self):
         return self.name

@@ -19,44 +19,153 @@ class Visualizer:
         self.game.set_players(player1, player2)
 
     def visualize(self):
-        with open("./interface/visualized.txt", "w") as f:
+        with open("./interface/visualized.txt", "w", encoding="utf-8") as f:
             while not self.stop_event.is_set():
                 f.seek(0)
                 f.truncate()
-                f.write(str(self.game.player1) + "\n")
 
-                f.write("sides: " + str(self.game.player1.sides) + "\n")
-                f.write("current_energy: " + str(self.game.player1.current_energy) + "\n")
-                f.write("energy_value: " + str(self.game.player1.energy_values) + "\n")
+                # Display turn and game state
+                border = "╔" + "═" * 48 + "╗\n"
+                f.write(border)
+                turn_text = f"Turn {self.game.turn}"
+                padding = (48 - len(turn_text)) // 2
                 f.write(
-                    "hand: "
-                    + str(self.game.player1.hand_goods)
-                    + ", "
-                    + str(self.game.player1.hand_pockemon)
-                    + ", "
-                    + str(self.game.player1.hand_trainer)
-                    + "\n"
+                    "║"
+                    + " " * padding
+                    + turn_text
+                    + " " * (48 - padding - len(turn_text))
+                    + "║\n"
                 )
-                f.write("bench: " + str(self.game.player1.bench) + "\n")
-                f.write("active: " + str(self.game.player1.active_pockemon) + "\n")
+                f.write("╚" + "═" * 48 + "╝\n\n")
 
-                f.write("--------------------\n")
-                f.write(str(self.game.player2) + "\n")
-                f.write("sides: " + str(self.game.player2.sides) + "\n")
-                f.write("current_energy: " + str(self.game.player2.current_energy) + "\n")
-                f.write("energy_value: " + str(self.game.player2.energy_values) + "\n")
-                f.write(
-                    "hand: "
-                    + str(self.game.player2.hand_goods)
-                    + ", "
-                    + str(self.game.player2.hand_pockemon)
-                    + ", "
-                    + str(self.game.player2.hand_trainer)
-                    + "\n"
-                )
-                f.write("bench: " + str(self.game.player2.bench) + "\n")
-                f.write("active: " + str(self.game.player2.active_pockemon) + "\n")
+                # Helper function to create HP bar
+                def create_hp_bar(pokemon):
+                    bar_length = 20
+                    filled = int((pokemon.hp / pokemon.max_hp) * bar_length)
+                    hp_bar = "█" * filled + "░" * (bar_length - filled)
+                    return f"{pokemon.hp}/{pokemon.max_hp} {hp_bar}"
 
+                # Helper function to create energy display
+                def create_energy_display(energies):
+                    energy_symbols = {
+                        "LIGHTNING": "雷",
+                        "FIRE": "火",
+                        "WATER": "水",
+                        "GRASS": "草",
+                        "PSYCHIC": "超",
+                        "FIGHTING": "闘",
+                    }
+                    energy_list = []
+                    for i, count in enumerate(energies.energies):
+                        if count > 0:
+                            symbol = energy_symbols.get(str(Energy(i)), "無")
+                            energy_list.extend([symbol] * count)
+                    return "".join(energy_list)
+
+                # Player 1 display
+                f.write(f"PLAYER 1: {self.game.player1}\n")
+                f.write(f"Prize Cards: {'🎴' * self.game.player1.sides}\n")
+
+                # Active Pokemon display
+                f.write("Active Pokemon:\n")
+                if self.game.player1.active_pockemon:
+                    pokemon = self.game.player1.active_pockemon
+                    hp_bar = create_hp_bar(pokemon)
+                    energy_display = create_energy_display(pokemon.energies)
+                    f.write(
+                        f"  {pokemon.name} "
+                        + " " * (20 - len(pokemon.name))
+                        + f"HP:[{hp_bar}] {energy_display}\n"
+                    )
+                else:
+                    f.write("  None\n")
+
+                # Bench display
+                f.write("Bench:\n")
+                for i, pokemon in enumerate(self.game.player1.bench):
+                    hp_bar = create_hp_bar(pokemon)
+                    energy_display = create_energy_display(pokemon.energies)
+                    f.write(
+                        f"  {i+1}. {pokemon.name} "
+                        + " " * (18 - len(pokemon.name))
+                        + f"HP:[{hp_bar}] {energy_display}\n"
+                    )
+
+                # Hand cards display
+                f.write("Hand:\n")
+                if self.game.player1.hand_pockemon:
+                    f.write(
+                        "  Pokemon: "
+                        + ", ".join([p.name for p in self.game.player1.hand_pockemon])
+                        + "\n"
+                    )
+                if self.game.player1.hand_goods:
+                    f.write(
+                        "  Goods: "
+                        + ", ".join([g.name for g in self.game.player1.hand_goods])
+                        + "\n"
+                    )
+                if self.game.player1.hand_trainer:
+                    f.write(
+                        "  Trainer: "
+                        + ", ".join([t.name for t in self.game.player1.hand_trainer])
+                        + "\n"
+                    )
+                f.write("\n")
+
+                # Divider between players
+                f.write(" " * 20 + "VS" + " " * 20 + "\n\n")
+
+                # Player 2 display
+                f.write(f"PLAYER 2: {self.game.player2}\n")
+                f.write(f"Prize Cards: {'🎴' * self.game.player2.sides}\n")
+
+                # Active Pokemon display
+                f.write("Active Pokemon:\n")
+                if self.game.player2.active_pockemon:
+                    pokemon = self.game.player2.active_pockemon
+                    hp_bar = create_hp_bar(pokemon)
+                    energy_display = create_energy_display(pokemon.energies)
+                    f.write(
+                        f"  {pokemon.name} "
+                        + " " * (20 - len(pokemon.name))
+                        + f"HP:[{hp_bar}] {energy_display}\n"
+                    )
+                else:
+                    f.write("  None\n")
+
+                # Bench display
+                f.write("Bench:\n")
+                for i, pokemon in enumerate(self.game.player2.bench):
+                    hp_bar = create_hp_bar(pokemon)
+                    energy_display = create_energy_display(pokemon.energies)
+                    f.write(
+                        f"  {i+1}. {pokemon.name} "
+                        + " " * (18 - len(pokemon.name))
+                        + f"HP:[{hp_bar}] {energy_display}\n"
+                    )
+
+                # Hand cards display
+                f.write("Hand:\n")
+                if self.game.player2.hand_pockemon:
+                    f.write(
+                        "  Pokemon: "
+                        + ", ".join([p.name for p in self.game.player2.hand_pockemon])
+                        + "\n"
+                    )
+                if self.game.player2.hand_goods:
+                    f.write(
+                        "  Goods: "
+                        + ", ".join([g.name for g in self.game.player2.hand_goods])
+                        + "\n"
+                    )
+                if self.game.player2.hand_trainer:
+                    f.write(
+                        "  Trainer: "
+                        + ", ".join([t.name for t in self.game.player2.hand_trainer])
+                        + "\n"
+                    )
+                f.write("\n")
                 f.flush()
                 time.sleep(1)
 

@@ -1,18 +1,26 @@
-player1
-sides: 0
-current_energy: None
-energy_value: [1, 1, 1, 1, 1, 1, 1, 1]
-hand: [KizuGusuri, KizuGusuri], [<game.cards.pockemon_cards.lightning_card.Zeburaika object at 0x7efeb0304b30>], [HakaseResearcher, Sakaki]
-bench: []
-active: name: PikachuEX   hp: 120   type: lightning   weakness: fighting   retreat_cost: 1   attached_energies: lightning: 1
+╔════════════════════════════════════════════════╗
+║                     Turn 2                     ║
+╚════════════════════════════════════════════════╝
 
+PLAYER 1: player1
+Prize Cards: 
+Active Pokemon:
+  PikachuEX            HP:[120/120 ████████████████████] 
+Bench:
+Hand:
+  Pokemon: Zeburaika
+  Goods: KizuGusuri, KizuGusuri
+  Trainer: HakaseResearcher, Sakaki
 
---------------------
-rulebase
-sides: 0
-current_energy: lightning
-energy_value: [1, 1, 1, 1, 1, 1, 1, 1]
-hand: [Speeder, Speeder, MonsterBall], [], [Sakaki, Natsume]
-bench: [<game.cards.pockemon_cards.lightning_card.Shimama object at 0x7efeb0129e20>]
-active: name: PikachuEX   hp: 120   type: lightning   weakness: fighting   retreat_cost: 1   attached_energies: 
+                    VS                    
+
+PLAYER 2: rulebase
+Prize Cards: 
+Active Pokemon:
+  PikachuEX            HP:[120/120 ████████████████████] 
+Bench:
+  1. Shimama            HP:[60/60 ████████████████████] 
+Hand:
+  Goods: Speeder, Speeder
+  Trainer: Sakaki, Natsume
 
