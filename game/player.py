@@ -4,6 +4,7 @@ import logging
 import random
 from collections import defaultdict as ddict
 from itertools import chain, combinations, product
+from typing import Callable
 
 import game.utils
 from game.cards.goods_cards.goods import GoodsCard
@@ -22,11 +23,11 @@ class Player:
         self.deck = deck
         self.energy_candidates = energies
         self.energy_values = [1] * len(Energy)
+        self.is_random = False  # Flag for random action selection
         self.hand_pockemon: list[PockemonCard] = []
         self.hand_goods: list[GoodsCard] = []
         self.hand_trainer: list[TrainerCard] = []
         self.bench: list[PockemonCard] = []
-        self.active_pockemon = None
         self.sides = 0
         self.current_energy = None
         self.trash = []
@@ -62,13 +63,9 @@ class Player:
         logger.debug(f"【{self.name}】カードを{number}枚ドローしました")
 
     def prepare_active_pockemon(self, card: PockemonCard):
-        self.active_pockemon = card
+        self.active_pockemon: PockemonCard = card
         card.enter_battle()
         self.hand_pockemon.remove(card)
-
-    def reverse_prepare_active_pockemon(self, card: PockemonCard):
-        self.active_pockemon = None
-        self.hand_pockemon.append(card)
 
     def prepare_bench_pockemon(self, card: PockemonCard):
         self.bench.append(card)
@@ -84,7 +81,7 @@ class Player:
         assert self.active_pockemon
         return self.active_pockemon.candidate_attacks()
 
-    def attack(self, attack: None | PockemonAttack, target: PockemonCard = None):
+    def attack(self, attack: None | PockemonAttack, target: PockemonCard | None = None):
         if attack is None:
             return
         if target is None:
@@ -315,6 +312,7 @@ class Player:
 
     # エネルギーをつける
     def attach_energy(self, card: PockemonCard):
+        assert self.current_energy
         card.attach_energy(self.current_energy)
         logger.info(
             f"【{self.name}】{card.name}に{self.current_energy.name}エネルギーを付与しました"
@@ -361,7 +359,7 @@ class Player:
 
     def use_goods(self):
         # ex. [[(kizugusuri, active), (kizugusuri, bench1)], (redcard), ...]
-        goods_cards: list[GoodsCard] = []
+        goods_cards: list[list[tuple[GoodsCard, PockemonCard]] | GoodsCard] = []
         for card in self.hand_goods:
             if card.name == "MonsterBall":
                 card.use(self.game)
@@ -371,7 +369,7 @@ class Player:
                 if use_list is True:
                     goods_cards.append(card)
                 # 対象あり
-                else:
+                elif isinstance(use_list, list):
                     goods_cards.append([(card, pockemon) for pockemon in use_list])
 
         # それぞれ使うか使わないか,2**len(goods_cards)通り * 対象の選択肢
@@ -379,7 +377,7 @@ class Player:
         action = {}
         manage_duplicates = set()
         for i in range(2 ** len(goods_cards)):
-            use_goods_list: list[list[tuple[GoodsCard, PockemonCard]]] = [[]]
+            use_goods_list: list[list[tuple[GoodsCard, PockemonCard | None]]] = [[]]
             for j, card in enumerate(goods_cards):
                 card: GoodsCard | list[tuple[GoodsCard, PockemonCard]]
                 if (i >> j) & 1:
@@ -428,7 +426,7 @@ class Player:
                 if use_list is True:
                     trainer_cards.append((card, None))
                 else:
-                    trainer_cards.append([(card, pockemon) for pockemon in use_list])
+                    trainer_cards.extend([(card, pockemon) for pockemon in use_list])
 
         # 使用するかどうかの選択肢
         selection = {}
@@ -513,16 +511,31 @@ class Player:
     def select_action(
         self,
         selection: dict[int, str],
-        action: dict[int, callable] = {},
+        action: dict[int, Callable] = {},
     ):
         if len(selection) == 1:
             return 0
         logger.info(f"【{self.name}】アクションを選択してください")
         for key, value in selection.items():
             logger.info(f"{key}: {value}")
-        i = int(input())
+
+        if self.is_random:
+            # Return random valid index when in random mode
+            i = random.choice(list(selection.keys()))
+        else:
+            i = int(input())
         assert i in selection
         return i
+
+    def set_random(self):
+        """Enable random action selection mode"""
+        self.is_random = True
+        logger.info(f"【{self.name}】ランダムモードを有効化しました")
+
+    def unset_random(self):
+        """Disable random action selection mode"""
+        self.is_random = False
+        logger.info(f"【{self.name}】ランダムモードを無効化しました")
 
     def __str__(self):
         return self.name

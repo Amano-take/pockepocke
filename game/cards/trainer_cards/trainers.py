@@ -1,4 +1,6 @@
 from __future__ import annotations
+
+from game.cards import PockemonCard
 from game.cards.base_card import Card
 from game.cards.pockemon_card import PockemonType
 from game.energy import Energy
@@ -10,15 +12,14 @@ class TrainerCard(Card):
         self.name = self.__class__.__name__
         super().__init__()
 
-    def can_use(self, game: Game):
+    def can_use(self, game: Game) -> bool | list[PockemonCard]:
         return True
 
-    def use(self, game: Game):
+    def use(self, game: Game, target: PockemonCard | None = None):
+        assert game.active_player
+        assert self in game.active_player.hand_trainer
         game.active_player.hand_trainer.remove(self)
         game.active_player.trash.append(self)
-
-    def can_use(self, game: Game):
-        return True
 
     def __str__(self):
         return self.name

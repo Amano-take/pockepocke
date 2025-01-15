@@ -1,7 +1,7 @@
 from __future__ import annotations
+
 from game.cards.base_card import Card
-from game.cards.pockemon_card import PockemonCard
-from game.cards.pockemon_card import PockemonType
+from game.cards.pockemon_card import PockemonCard, PockemonType
 
 
 class GoodsCard(Card):
@@ -9,7 +9,7 @@ class GoodsCard(Card):
         self.name = self.__class__.__name__
         super().__init__()
 
-    def can_use(self, game: Game):
+    def can_use(self, game: Game) -> bool | list[PockemonCard]:
         return True
 
     def use(self, game: Game):
@@ -45,7 +45,9 @@ class KizuGusuri(GoodsCard):
 
 class MonsterBall(GoodsCard):
     def use(self, game: Game):
-        game.active_player.hand_pockemon.append(game.active_player.deck.draw_seed_pockemon())
+        game.active_player.hand_pockemon.append(
+            game.active_player.deck.draw_seed_pockemon()
+        )
         super().use(game)
 
 
