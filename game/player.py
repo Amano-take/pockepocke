@@ -2,19 +2,16 @@ from __future__ import annotations
 
 import logging
 import random
-from itertools import combinations, chain, product
 from collections import defaultdict as ddict
+from itertools import chain, combinations, product
 
-from game.exceptions import GameOverException
 import game.utils
-
+from game.cards.goods_cards.goods import GoodsCard
+from game.cards.pockemon_card import PockemonAttack, PockemonCard
+from game.cards.trainer_cards.trainers import TrainerCard
 from game.deck import Deck
 from game.energy import Energy
-from game.cards.pockemon_card import PockemonCard
-from game.cards.goods_cards.goods import GoodsCard
-from game.cards.trainer_cards.trainers import TrainerCard
-from game.cards.pockemon_card import PockemonAttack
-
+from game.exceptions import GameOverException
 
 logger = logging.getLogger(__name__)
 
@@ -35,7 +32,11 @@ class Player:
         self.trash = []
         # ターンを終わったときの処理
         self.processes_at_end_of_turn = []
-        # ターンを始めたときの処理
+        self.init_buff()
+
+    def init_buff(self):
+        self.attack_buff_value = 0
+        self.retreat_cost_buff = 0
 
     def set_game(self, game: Game):
         self.game = game
@@ -55,7 +56,7 @@ class Player:
                 self.hand_pockemon.append(card)
             elif isinstance(card, GoodsCard):
                 self.hand_goods.append(card)
-            else:
+            elif isinstance(card, TrainerCard):
                 self.hand_trainer.append(card)
                 pass
         logger.debug(f"【{self.name}】カードを{number}枚ドローしました")
@@ -80,6 +81,7 @@ class Player:
         self.active_pockemon = card
 
     def candidate_attack(self):
+        assert self.active_pockemon
         return self.active_pockemon.candidate_attacks()
 
     def attack(self, attack: None | PockemonAttack, target: PockemonCard = None):
@@ -172,7 +174,12 @@ class Player:
         self.retreat_select()
         # 攻撃する or ターン終了
         self.attack_select()
+        self.end_turn()
         return
+
+    def end_turn(self):
+        self.attack_buff_value = 0
+        self.retreat_cost_buff = 0
 
     def attack_select(self):
         attack_list = self.candidate_attack()
@@ -196,8 +203,13 @@ class Player:
 
         return
 
-    def retreat(self, card: PockemonCard):
-        assert card in self.bench
+    def retreat(self, card: PockemonCard, energies: list[Energy]):
+        assert (
+            (card in self.bench)
+            and isinstance(card, PockemonCard)
+            and isinstance(self.active_pockemon, PockemonCard)
+        )
+        self.active_pockemon.retreat(self.retreat_cost_buff, energies)
         self.bench[self.bench.index(card)], self.active_pockemon = (
             self.active_pockemon,
             card,
@@ -209,9 +221,29 @@ class Player:
         action = {}
         selection[len(selection)] = "逃げない"
         action[len(action)] = lambda: None
+        manage_duplicates = set()
+        if self.active_pockemon is None or not self.active_pockemon.can_retreat(
+            self.retreat_cost_buff
+        ):
+            return
         for i, card in enumerate(self.bench):
-            selection[len(selection)] = f"{card}をアクティブに出す"
-            action[len(action)] = lambda card=card: self.retreat(card)
+            # active_pockemon.energyからretreat_cost - retreat_cost_buffを引いたものの場合の数を選択肢にする
+            num: int = self.active_pockemon.retreat_cost - self.retreat_cost_buff
+            for comb in combinations(self.active_pockemon.energies.flatten(), num):
+                if (
+                    sorted_name := (
+                        card.id_,
+                        "".join([energy.name for energy in comb]),
+                    )
+                ) in manage_duplicates:
+                    continue
+                manage_duplicates.add(sorted_name)
+                selection[len(selection)] = (
+                    f"{self.active_pockemon.name}は{card.name}と{[energy.name for energy in comb]}交代する。"
+                )
+                action[len(action)] = lambda card=card, comb=comb: self.retreat(
+                    card, list(comb)
+                )
 
         i = self.select_action(selection, action)
         action[i]()

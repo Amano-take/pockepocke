@@ -1,8 +1,9 @@
-from game.player import Player
-from game.game import Game
 import logging
 import pickle
-from typing import Dict, Callable
+from typing import Callable, Dict
+
+from game.game import Game
+from game.player import Player
 
 logger = logging.getLogger(__name__)
 
@@ -91,6 +92,6 @@ class RuleBasePlayer(Player):
 
         logger.debug(f"scores: {scores}")
         logger.debug(f"selection: {selection}")
-        ans = max(scores, key=scores.get)
+        ans = max(scores, key=lambda k: scores[k])
         logger.debug(f"ans: {ans}")
         return ans

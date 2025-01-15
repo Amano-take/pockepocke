@@ -1,12 +1,14 @@
-import pytest
 from unittest.mock import patch
-from game.cards import *
 
+import pytest
+
+from game.cards import *
 from game.deck import Deck
-from game.player import Player
 from game.energy import Energy
-from game.game import Game
 from game.exceptions import GameOverException
+from game.game import Game
+from game.player import Player
+
 from .utils.set_lightning import set_lightning
 
 game = Game()
@@ -383,9 +385,14 @@ def test_retreat():
     game.active_player = player1
     game.waiting_player = player2
 
-    player1.retreat(player1_shimama2)
+    player1_shimama1.attach_energy(Energy.LIGHTNING)
+
+    player1.retreat(player1_shimama2, [Energy.LIGHTNING])
     assert player1.active_pockemon is player1_shimama2
     assert player1.bench[0] is player1_shimama1
+
+    player1_shimama2.attach_energy(Energy.LIGHTNING)
+    player1_shimama2.attach_energy(Energy.LIGHTNING)
 
     with patch.object(player1, "select_action", return_value=2) as mock:
         player1.retreat_select()

@@ -2,8 +2,9 @@ from __future__ import annotations
 
 import copy
 from enum import Enum
-from game.energy import Energy, AttachedEnergies, RequiredEnergy
+
 from game.cards.base_card import Card
+from game.energy import AttachedEnergies, Energy, RequiredEnergy
 from game.exceptions import GameOverException
 
 
@@ -52,7 +53,11 @@ class PockemonAttack:
             if self.required_energy.energies[i] > energies.energies[i]:
                 return False
 
-        if energies.get_sum() < sum(self.required_energy.energies) + self.required_energy.number_any_energy:
+        if (
+            energies.get_sum()
+            < sum(self.required_energy.energies)
+            + self.required_energy.number_any_energy
+        ):
             return False
 
         return True
@@ -118,6 +123,14 @@ class PockemonCard(Card):
         self.opponent = opponent
         self.game = player.game
 
+    def can_retreat(self, buffer: int = 0) -> bool:
+        return self.energies.get_sum() + buffer >= self.retreat_cost
+
+    def retreat(self, buffer: int = 0, loss_energies: list[Energy] = []):
+        assert self.retreat_cost + buffer == len(loss_energies)
+        for energy in loss_energies:
+            self.energies.detach_energy(energy)
+
     def can_attack(self, attack: PockemonAttack | int):
         if isinstance(attack, int):
             attack = self.attacks[attack]
@@ -150,7 +163,11 @@ class PockemonCard(Card):
     def get_damage(self, damage: int, enemy_type: PockemonType = None):
         if damage < 0:
             return True
-        if enemy_type is not None and enemy_type == self.weakness and self.player.active_pockemon is self:
+        if (
+            enemy_type is not None
+            and enemy_type == self.weakness
+            and self.player.active_pockemon is self
+        ):
             damage += 20
         self.hp -= damage
         if self.hp > 0:

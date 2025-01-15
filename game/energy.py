@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 from enum import Enum
 
 
@@ -34,10 +35,17 @@ class AttachedEnergies:
         self.energies[energy.value] += 1
 
     def detach_energy(self, energy: Energy):
+        assert self.energies[energy.value] > 0
         self.energies[energy.value] -= 1
 
     def get_energy(self, energy: Energy):
         return self.energies[energy.value]
+
+    def flatten(self) -> list[Energy]:
+        ans = []
+        for i, count in enumerate(self.energies):
+            ans.extend([Energy(i) for _ in range(count)])
+        return ans
 
     # AttachedEnergiesインスタンスに対して[i]でアクセスできるように
     def __getitem__(self, key):
