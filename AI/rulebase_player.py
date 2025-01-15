@@ -9,22 +9,47 @@ logger = logging.getLogger(__name__)
 
 class RuleBasePlayer(Player):
     def calculate_action_score(self) -> float:
-        """行動のスコアを計算する"""
+        """
+        Calculate the score for the current game state.
+        Considers multiple factors including:
+        - Active Pokemon HP and energy
+        - Bench Pokemon status
+        - Hand size
+        - Side cards
+        - Opponent's state
+        """
         score = 0.0
 
-        # アクティブポケモンのHP (30)
+        # Active Pokemon evaluation (35 points max)
         if self.active_pockemon:
-            score += self.active_pockemon.hp * 0.3
+            # HP evaluation (20 points max)
+            score += self.active_pockemon.hp * 0.2
+            # Energy evaluation (15 points max)
+            total_energy = sum(self.active_pockemon.energies.energies)
+            score += total_energy * 3
 
-        # 相手のアクティブポケモンのHP (30)
+        # Opponent's Active Pokemon evaluation (-35 points max)
         if self.opponent.active_pockemon:
-            score -= self.opponent.active_pockemon.hp * 0.3
+            score -= self.opponent.active_pockemon.hp * 0.2
+            opp_total_energy = sum(self.opponent.active_pockemon.energies.energies)
+            score -= opp_total_energy * 3
 
-        # サイドの状況 ( 45 )
+        # Bench evaluation (30 points max)
+        bench_hp_total = sum(p.hp for p in self.bench)
+        score += bench_hp_total * 0.1
+        score += len(self.bench) * 6
+
+        # Opponent's bench evaluation (-20 points max)
+        score -= len(self.opponent.bench) * 4
+
+        # Hand size evaluation (20 points max)
+        total_hand = (
+            len(self.hand_pockemon) + len(self.hand_goods) + len(self.hand_trainer)
+        )
+        score += total_hand * 2
+
+        # Side cards evaluation (45 points max)
         score += self.sides * 30
-
-        # ベンチポケモンの数 ( 10 )
-        score += len(self.bench) * 10
 
         return score
 

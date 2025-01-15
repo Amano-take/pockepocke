@@ -174,8 +174,16 @@ class Visualizer:
             self.stop_event.set()
             sys.exit(0)
 
+        def run_game():
+            try:
+                self.game.start()
+            except Exception as e:
+                print(f"Error in game thread: {str(e)}")
+                self.stop_event.set()
+                sys.exit(1)
+
         signal.signal(signal.SIGINT, signal_handler)
-        thread1 = threading.Thread(target=self.game.start, daemon=True)
+        thread1 = threading.Thread(target=run_game, daemon=True)
         thread2 = threading.Thread(target=self.visualize, daemon=True)
         thread1.start()
         thread2.start()
