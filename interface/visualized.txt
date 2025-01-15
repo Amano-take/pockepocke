@@ -1,26 +1,30 @@
 ╔════════════════════════════════════════════════╗
-║                     Turn 2                     ║
+║                     Turn 5                     ║
 ╚════════════════════════════════════════════════╝
 
 PLAYER 1: player1
 Prize Cards: 
 Active Pokemon:
-  PikachuEX            HP:[120/120 ████████████████████] 
+  ThunderEX            HP:[130/130 ████████████████████] 雷
 Bench:
+  1. PikachuEX          HP:[120/120 ████████████████████] 雷
+  2. ThunderEX          HP:[130/130 ████████████████████] 
 Hand:
   Pokemon: Zeburaika
   Goods: KizuGusuri, KizuGusuri
-  Trainer: HakaseResearcher, Sakaki
+  Trainer: Sakaki, Natsume
 
                     VS                    
 
 PLAYER 2: rulebase
 Prize Cards: 
 Active Pokemon:
-  PikachuEX            HP:[120/120 ████████████████████] 
+  PikachuEX            HP:[100/120 ████████████████░░░░] 雷
 Bench:
   1. Shimama            HP:[60/60 ████████████████████] 
+  2. Shimama            HP:[60/60 ████████████████████] 
 Hand:
+  Pokemon: Dedenne
   Goods: Speeder, Speeder
   Trainer: Sakaki, Natsume
 
