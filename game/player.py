@@ -105,9 +105,7 @@ class Player:
                     continue
                 manage_duplicates.add(card.name)
                 selection[len(selection)] = f"{card.name}をバトル場に出す"
-                action[len(action)] = lambda card=card: self.prepare_active_pockemon(
-                    card
-                )
+                action[len(action)] = lambda card=card: self.prepare_active_pockemon(card)
         i = self.select_action(selection, action)
         action[i]()
 
@@ -123,20 +121,12 @@ class Player:
         manage_duplicates = set()
         for i in range(0, min(3, len(selection_list)) + 1):
             for comb in combinations(selection_list, i):
-                if (
-                    tuple(sorted([self.hand_pockemon[j].name for j in comb]))
-                    in manage_duplicates
-                ):
+                if tuple(sorted([self.hand_pockemon[j].name for j in comb])) in manage_duplicates:
                     continue
-                manage_duplicates.add(
-                    tuple(sorted([self.hand_pockemon[j].name for j in comb]))
-                )
-                selection[len(selection)] = (
-                    f"{[self.hand_pockemon[j].name for j in comb]}をベンチに出す"
-                )
+                manage_duplicates.add(tuple(sorted([self.hand_pockemon[j].name for j in comb])))
+                selection[len(selection)] = f"{[self.hand_pockemon[j].name for j in comb]}をベンチに出す"
                 action[len(action)] = lambda comb=comb: [
-                    self.prepare_bench_pockemon(self.hand_pockemon[j])
-                    for j in reversed(comb)
+                    self.prepare_bench_pockemon(self.hand_pockemon[j]) for j in reversed(comb)
                 ]
 
         i = self.select_action(selection, action)
@@ -176,9 +166,7 @@ class Player:
         for i, attack in enumerate(attack_list):
             for target in attack.target_list(self.game):
                 selection[len(selection)] = f"{attack}を{target.name}使う"
-                action[len(action)] = lambda attack=attack, target=target: self.attack(
-                    attack, target
-                )
+                action[len(action)] = lambda attack=attack, target=target: self.attack(attack, target)
 
         i = self.select_action(selection, action)
         action[i]()
@@ -315,7 +303,7 @@ class Player:
     def use_goods(self):
         # ex. [[(kizugusuri, active), (kizugusuri, bench1)], (redcard), ...]
         goods_cards: list[GoodsCard] = []
-        for card in self.hand_goods[:]:
+        for card in self.hand_goods:
             if card.name == "MonsterBall":
                 card.use(self.game)
                 logger.debug(f"{self}が{card}を使った")
@@ -350,11 +338,7 @@ class Player:
 
             for use_goods in use_goods_list:
                 if (
-                    sorted_name := tuple(
-                        sorted(
-                            [(card.name, id(pockemon)) for card, pockemon in use_goods]
-                        )
-                    )
+                    sorted_name := tuple(sorted([(card.name, id(pockemon)) for card, pockemon in use_goods]))
                 ) in manage_duplicates:
                     continue
                 manage_duplicates.add(sorted_name)
@@ -362,11 +346,7 @@ class Player:
                     f"{[(card.name + 'を' + pockemon.name + 'に' if isinstance(pockemon, PockemonCard) else card.name) for card, pockemon in use_goods]}"
                 )
                 action[len(action)] = lambda use_goods=use_goods: [
-                    (
-                        card.use(self.game, pockemon)
-                        if isinstance(pockemon, PockemonCard)
-                        else card.use(self.game)
-                    )
+                    (card.use(self.game, pockemon) if isinstance(pockemon, PockemonCard) else card.use(self.game))
                     for card, pockemon in use_goods
                 ]
 
@@ -397,14 +377,13 @@ class Player:
             if (card.name, id(target)) in manage_duplicates:
                 continue
             manage_duplicates.add((card.name, id(target)))
-            selection[len(selection)] = (
-                f"{card.name}を{target.name}に使う" if target else f"{card.name}を使う"
-            )
+            selection[len(selection)] = f"{card.name}を{target.name}に使う" if target else f"{card.name}を使う"
             action[len(action)] = lambda card=card, target=target: (
                 card.use(self.game, target) if target else card.use(self.game)
             )
 
         i = self.select_action(selection, action)
+        logger.debug(selection[i])
         action[i]()
 
     def use_pockemon_select(self):
@@ -420,17 +399,10 @@ class Player:
         manage_duplicates = set()
         for i in range(0, min(3 - len(self.bench), len(selection_list)) + 1):
             for comb in combinations(selection_list, i):
-                if (
-                    tuple(sorted([self.hand_pockemon[j].name for j in comb]))
-                    in manage_duplicates
-                ):
+                if tuple(sorted([self.hand_pockemon[j].name for j in comb])) in manage_duplicates:
                     continue
-                manage_duplicates.add(
-                    tuple(sorted([self.hand_pockemon[j].name for j in comb]))
-                )
-                selection[len(selection)] = (
-                    f"{[self.hand_pockemon[j].name for j in comb]}をベンチに出す"
-                )
+                manage_duplicates.add(tuple(sorted([self.hand_pockemon[j].name for j in comb])))
+                selection[len(selection)] = f"{[self.hand_pockemon[j].name for j in comb]}をベンチに出す"
                 action[len(action)] = lambda comb=comb: [
                     self.prepare_bench_pockemon(self.hand_pockemon[j]) for j in comb
                 ]
@@ -438,7 +410,7 @@ class Player:
         i = self.select_action(selection, action)
         action[i]()
 
-        logger.debug(f"{self}が{self.active_pockemon}をアクティブに出した")
+        logger.debug(f"{self}が{selection[i]}をした")
 
     def select_bench(self):
         # active_pockemonが倒されたときの処理
@@ -449,9 +421,7 @@ class Player:
         action = {}
         for i, card in enumerate(self.bench):
             selection[len(selection)] = f"{card}をアクティブに出す"
-            action[len(action)] = (
-                lambda card=card: self.prepare_active_pockemon_from_bench(card)
-            )
+            action[len(action)] = lambda card=card: self.prepare_active_pockemon_from_bench(card)
 
         choice = self.select_action(selection, action)
         action[choice]()

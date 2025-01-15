@@ -83,7 +83,7 @@ class Natsume(TrainerCard):
 
 class Sakaki(TrainerCard):
     def use(self, game: Game):
-        game.active_player.buff(10)
+        game.active_player.attack_buff(10)
 
 
 if __name__ == "__main__":

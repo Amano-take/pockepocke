@@ -1,4 +1,5 @@
 from game.player import Player
+from game.game import Game
 import logging
 import pickle
 from typing import Dict, Callable
@@ -38,12 +39,12 @@ class RuleBasePlayer(Player):
                 elif isinstance(current_attr, dict) and isinstance(value, dict):
                     current_attr.clear()
                     current_attr.update(value)
+                elif isinstance(current_attr, Game):
+                    pass
                 else:
                     setattr(self, key, value)
 
-    def select_action(
-        self, selection: Dict[int, str], action: Dict[int, Callable] = {}
-    ) -> int:
+    def select_action(self, selection: Dict[int, str], action: Dict[int, Callable] = {}) -> int:
         """RuleBaseによる自動選択"""
         if len(selection) == 1:
             return 0
@@ -52,18 +53,14 @@ class RuleBasePlayer(Player):
         with open("./player.pkl", "wb") as f:
             pickle.dump(self, f)
 
-        id_ = id(self)
-        hash_ = hash(self)
-
         scores = {}
         for key in selection.keys():
             action[key]()
             scores[key] = self.calculate_action_score()
             self.load_pkl()
 
-        assert id(self) == id_
-        assert hash(self) == hash_
-
         logger.debug(f"scores: {scores}")
-        # max index
-        return max(scores, key=scores.get)
+        logger.debug(f"selection: {selection}")
+        ans = max(scores, key=scores.get)
+        logger.debug(f"ans: {ans}")
+        return ans

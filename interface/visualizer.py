@@ -5,12 +5,15 @@ import sys, os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from game import *
 from AI.rulebase_player import RuleBasePlayer
+import random
 
 
 class Visualizer:
     def __init__(self):
         self.game = Game()
         self.stop_event = threading.Event()
+        # set random seed
+        random.seed(0)
 
     def set_players(self, player1: Player, player2: Player):
         self.game.set_players(player1, player2)
@@ -23,9 +26,7 @@ class Visualizer:
                 f.write(str(self.game.player1) + "\n")
 
                 f.write("sides: " + str(self.game.player1.sides) + "\n")
-                f.write(
-                    "current_energy: " + str(self.game.player1.current_energy) + "\n"
-                )
+                f.write("current_energy: " + str(self.game.player1.current_energy) + "\n")
                 f.write("energy_value: " + str(self.game.player1.energy_values) + "\n")
                 f.write(
                     "hand: "
@@ -42,9 +43,7 @@ class Visualizer:
                 f.write("--------------------\n")
                 f.write(str(self.game.player2) + "\n")
                 f.write("sides: " + str(self.game.player2.sides) + "\n")
-                f.write(
-                    "current_energy: " + str(self.game.player2.current_energy) + "\n"
-                )
+                f.write("current_energy: " + str(self.game.player2.current_energy) + "\n")
                 f.write("energy_value: " + str(self.game.player2.energy_values) + "\n")
                 f.write(
                     "hand: "
