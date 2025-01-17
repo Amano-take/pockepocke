@@ -21,7 +21,7 @@ class Energy(Enum):
 
 
 class AttachedEnergies:
-    def __init__(self, player: Player = None):
+    def __init__(self, player: Player | None = None):
         self.energies = [0] * len(Energy)
         if player:
             self.energy_values = player.energy_values

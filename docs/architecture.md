@@ -33,5 +33,3 @@ pockepocke/
 └── docs/                      # ドキュメント
     ├── architecture.md        # 設計に関する詳細
     └── rules.md               # ゲームルール
-
-

@@ -68,13 +68,22 @@ class PockemonAttack:
     def set_type(self, type_: PockemonType):
         self.attack_type = type_
 
-    def attack(self, game: Game, target_pockemon: PockemonCard = None, plus_damage=0):
+    def attack(self, game: Game, target_pockemon: PockemonCard = None):
         if target_pockemon is None:
             target_pockemon = game.waiting_player.active_pockemon
-        target_pockemon.get_damage(self.damage + plus_damage, self.attack_type)
+        target_pockemon.get_damage(game, self.damage, self.attack_type)
 
 
 class PockemonCard(Card):
+    hp: int = 100
+    type: PockemonType = PockemonType.NORMAL
+    weakness: PockemonType = PockemonType.NORMAL
+    attacks: list[PockemonAttack] = []
+    retreat_cost: int = 1
+    previous_pockemon: PockemonCard | None = None
+    next_pockemon: PockemonCard | None = None
+    is_ex: bool = False
+
     def __init__(self):
         self.name = self.__class__.__name__
         self.energies = AttachedEnergies()
@@ -118,10 +127,9 @@ class PockemonCard(Card):
         super().__init__()
 
     def set_player(self, player: Player, opponent: Player):
-        self.player = player
+        self.player = player.name
         self.energies.set_player(player)
-        self.opponent = opponent
-        self.game = player.game
+        self.opponent = opponent.name
 
     def can_retreat(self, buffer: int = 0) -> bool:
         return self.energies.get_sum() + buffer >= self.retreat_cost
@@ -160,20 +168,27 @@ class PockemonCard(Card):
     def detach_energy(self, energy: Energy):
         self.energies.detach_energy(energy)
 
-    def get_damage(self, damage: int, enemy_type: PockemonType = None):
+    def get_damage(
+        self, game: Game, damage: int, enemy_type: PockemonType | None = None
+    ):
         if damage < 0:
             return True
+        my_player = game.get_player_by_name(self.player)
+        opponent = game.get_player_by_name(self.opponent)
         if (
             enemy_type is not None
             and enemy_type == self.weakness
-            and self.player.active_pockemon is self
+            and my_player.active_pockemon is self
         ):
             damage += 20
+        assert game.active_player
+        if game.active_player.attack_buff_value > 0:
+            damage += game.active_player.attack_buff_value
         self.hp -= damage
         if self.hp > 0:
             return True
 
-        return self.leave_battle()
+        return self.leave_battle(game)
 
     def enter_battle(self):
         self.feature_passive()
@@ -187,41 +202,33 @@ class PockemonCard(Card):
     def reset_feature_passive(self):
         pass
 
-    def leave_battle(self):
+    def leave_battle(self, game: Game):
         """
         return:
             True ゲームを続ける
             False ゲーム終了
         """
         self.reset_feature_passive()
+        my_player = game.get_player_by_name(self.player)
+        opponent = game.get_player_by_name(self.opponent)
 
         if self.is_ex:
-            self.opponent.sides += 2
+            opponent.sides += 2
         else:
-            self.opponent.sides += 1
+            opponent.sides += 1
 
         # ゲームの終了判定
-        if len(self.opponent.bench) == 0:
-            self.game.winner = self.opponent
-            self.game.loser = self.player
+        if len(opponent.bench) == 0:
+            game.winner = opponent
+            game.loser = my_player
             raise GameOverException("勝利プレイヤー: " + str(self.opponent))
 
-        if self.opponent.sides >= 3:
-            self.game.winner = self.opponent
-            self.game.loser = self.player
+        if opponent.sides >= 3:
+            self.game.winner = opponent
+            self.game.loser = my_player
             raise GameOverException("勝利プレイヤー: " + str(self.opponent))
 
-        self.player.select_bench()
-        return
-
-    def use_to_active(self):
-        self.game.active_player.active_pockemon = self
-        self.game.active_player.hand_pockemon.remove(self)
-        return
-
-    def use_to_bench(self):
-        self.game.active_player.bench.append(self)
-        self.game.active_player.hand_pockemon.remove(self)
+        my_player.select_bench()
         return
 
     def __str__(self):

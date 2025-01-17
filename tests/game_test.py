@@ -40,5 +40,3 @@ game.set_players(player1, player2)
 
 def test_attack_pikachu():
 	pass
-
-

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import pickle
 import random
 from collections import defaultdict as ddict
 from itertools import chain, combinations, product
@@ -31,6 +32,8 @@ class Player:
         self.sides = 0
         self.current_energy = None
         self.trash = []
+        # temp variable
+        self.active_pockemon: PockemonCard = PockemonCard()
         # ターンを終わったときの処理
         self.processes_at_end_of_turn = []
         self.init_buff()
@@ -86,7 +89,7 @@ class Player:
             return
         if target is None:
             target = self.opponent.active_pockemon
-        if target is not self.opponent.active_pockemon:
+        if target != self.opponent.active_pockemon:
             attack.attack(self.game, target)
         else:
             attack.attack(self.game)
@@ -375,8 +378,10 @@ class Player:
         # それぞれ使うか使わないか,2**len(goods_cards)通り * 対象の選択肢
         selection = {}
         action = {}
+        selection[len(selection)] = "グッズカードを使用しない"
+        action[len(action)] = lambda: None
         manage_duplicates = set()
-        for i in range(2 ** len(goods_cards)):
+        for i in range(1, 2 ** len(goods_cards)):
             use_goods_list: list[list[tuple[GoodsCard, PockemonCard | None]]] = [[]]
             for j, card in enumerate(goods_cards):
                 card: GoodsCard | list[tuple[GoodsCard, PockemonCard]]
@@ -417,7 +422,11 @@ class Player:
 
         i = self.select_action(selection, action)
         action[i]()
-        logger.info(f"【{self.name}】{selection[i]}を使用しました")
+        logger.info(
+            f"【{self.name}】{selection[i]}を使用しました"
+            if i != 0
+            else "グッズカードは使用しませんでした"
+        )
 
     def use_trainer(self):
         trainer_cards: list[tuple[TrainerCard, PockemonCard | None]] = []
@@ -536,6 +545,26 @@ class Player:
         """Disable random action selection mode"""
         self.is_random = False
         logger.info(f"【{self.name}】ランダムモードを無効化しました")
+
+    def load_pkl(self, path="./player.pkl"):
+        from game.game import Game
+
+        with open(path, "rb") as f:
+            loaded_obj = pickle.load(f)
+            for key, value in loaded_obj.__dict__.items():
+                current_attr = getattr(self, key, None)
+                if isinstance(current_attr, list) and isinstance(value, list):
+                    current_attr.clear()
+                    current_attr.extend(value)
+                elif isinstance(current_attr, dict) and isinstance(value, dict):
+                    current_attr.clear()
+                    current_attr.update(value)
+                elif isinstance(current_attr, Game):
+                    pass
+                elif isinstance(current_attr, Player):
+                    pass
+                else:
+                    setattr(self, key, value)
 
     def __str__(self):
         return self.name

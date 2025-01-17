@@ -27,7 +27,7 @@ class RuleBasePlayer(Player):
             score += self.active_pockemon.hp * 0.2
             # Energy evaluation (15 points max)
             total_energy = sum(self.active_pockemon.energies.energies)
-            score += total_energy * 3
+            score += total_energy * 6
 
         # Opponent's Active Pokemon evaluation (-35 points max)
         if self.opponent.active_pockemon:
@@ -54,24 +54,6 @@ class RuleBasePlayer(Player):
 
         return score
 
-    def load_pkl(self):
-        with open("./player.pkl", "rb") as f:
-            loaded_obj = pickle.load(f)
-            for key, value in loaded_obj.__dict__.items():
-                current_attr = getattr(self, key, None)
-                if isinstance(current_attr, list) and isinstance(value, list):
-                    current_attr.clear()
-                    current_attr.extend(value)
-                elif isinstance(current_attr, dict) and isinstance(value, dict):
-                    current_attr.clear()
-                    current_attr.update(value)
-                elif isinstance(current_attr, Game):
-                    pass
-                elif isinstance(current_attr, Player):
-                    pass
-                else:
-                    setattr(self, key, value)
-
     def select_action(
         self, selection: Dict[int, str], action: Dict[int, Callable] = {}
     ) -> int:
@@ -83,12 +65,17 @@ class RuleBasePlayer(Player):
         with open("./player.pkl", "wb") as f:
             pickle.dump(self, f)
 
+        with open("./opponent.pkl", "wb") as f:
+            pickle.dump(self.opponent, f)
+
         scores = {}
         for key in selection.keys():
             # TODO: 相手の行動が必要なactionの場合バグの発生
+            self.opponent.set_random()
             action[key]()
             scores[key] = self.calculate_action_score()
-            self.load_pkl()
+            self.load_pkl("player.pkl")
+            self.opponent.load_pkl("opponent.pkl")
 
         logger.debug(f"scores: {scores}")
         logger.debug(f"selection: {selection}")

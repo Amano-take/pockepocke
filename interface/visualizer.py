@@ -1,11 +1,14 @@
-import threading, signal
+import os
+import signal
+import sys
+import threading
 import time
-import sys, os
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
-from game import *
-from AI.rulebase_player import RuleBasePlayer
 import random
+
+from AI.rulebase_player import RuleBasePlayer
+from game import *
 
 
 class Visualizer:
@@ -179,6 +182,10 @@ class Visualizer:
                 self.game.start()
             except Exception as e:
                 print(f"Error in game thread: {str(e)}")
+                # show traceback
+                import traceback
+
+                traceback.print_exc()
                 self.stop_event.set()
                 sys.exit(1)
 

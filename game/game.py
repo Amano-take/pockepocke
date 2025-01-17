@@ -1,15 +1,15 @@
-from random import random
 from enum import Enum
+from random import random
 
-from game.player import Player
 from game.exceptions import GameOverException
+from game.player import Player
 
 
 class Game:
     def __init__(self):
         self.turn = 0
-        self.winner = None
-        self.loser = None
+        self.winner: Player | None = None
+        self.loser: Player | None = None
 
     def set_players(self, player1: Player, player2: Player):
         self.player1 = player1
@@ -57,6 +57,13 @@ class Game:
                 self.waiting_player,
                 self.active_player,
             )
+
+    def get_player_by_name(self, name: str):
+        if self.player1.name == name:
+            return self.player1
+        if self.player2.name == name:
+            return self.player2
+        raise ValueError("プレイヤーが見つかりません")
 
     def coin_toss(self):
         # 0が外れ　1が当たり
