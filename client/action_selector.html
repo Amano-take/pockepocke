@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>ポケポッケ オンライン</title>
+  <style>
+    body {
+      font-family: "Helvetica Neue", Arial, sans-serif;
+      max-width: 800px;
+      margin: 20px auto;
+      padding: 0 20px;
+      background: #f5f5f5;
+    }
+
+    .game-container {
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .status-bar {
+      margin-bottom: 20px;
+      padding: 10px;
+      border-radius: 4px;
+      font-weight: bold;
+    }
+
+    .connected {
+      background: #e8f5e9;
+      color: #2e7d32;
+    }
+
+    .disconnected {
+      background: #ffebee;
+      color: #c62828;
+    }
+
+    .action-button {
+      display: block;
+      width: 100%;
+      margin: 10px 0;
+      padding: 15px;
+      font-size: 16px;
+      border: none;
+      border-radius: 4px;
+      background: #4a90e2;
+      color: white;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .action-button:hover {
+      background: #357abd;
+    }
+
+    .action-button:disabled {
+      background: #cccccc;
+      cursor: not-allowed;
+    }
+
+    #action-container {
+      margin-top: 20px;
+    }
+
+    .error {
+      color: #c62828;
+      margin: 10px 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="game-container">
+    <div id="status" class="status-bar disconnected">接続中...</div>
+    <div id="action-container">
+      <p>選択肢を待っています...</p>
+    </div>
+  </div>
+
+  <script>
+    let socket = null;
+    let clientId = null;
+    const statusElement = document.getElementById('status');
+    const actionContainer = document.getElementById('action-container');
+
+    function updateStatus(connected, message) {
+      statusElement.className = `status-bar ${connected ? 'connected' : 'disconnected'}`;
+      statusElement.textContent = message;
+    }
+
+    function disableAllButtons() {
+      const buttons = document.querySelectorAll('.action-button');
+      buttons.forEach(button => button.disabled = true);
+    }
+
+    function handleActionClick(index) {
+      if (!socket || socket.readyState !== WebSocket.OPEN) {
+        console.error('WebSocket is not connected');
+        return;
+      }
+
+      const message = {
+        type: 'action_response',
+        selected_index: index,
+        timestamp: new Date().toISOString()
+      };
+
+      try {
+        socket.send(JSON.stringify(message));
+        disableAllButtons();
+      } catch (error) {
+        console.error('Failed to send action:', error);
+        updateStatus(false, '送信エラー: 再接続してください');
+      }
+    }
+
+    function displayActions(selections) {
+      actionContainer.innerHTML = '';
+
+      Object.entries(selections).forEach(([index, text]) => {
+        const button = document.createElement('button');
+        button.className = 'action-button';
+        button.textContent = text;
+        button.onclick = () => handleActionClick(parseInt(index));
+        actionContainer.appendChild(button);
+      });
+    }
+
+    function connectWebSocket() {
+      try {
+        socket = new WebSocket('ws://localhost:8080/ws/' + Math.random().toString(36).substr(2, 9));
+
+        socket.onopen = () => {
+          updateStatus(true, '接続完了');
+        };
+
+        socket.onmessage = (event) => {
+          const data = JSON.parse(event.data);
+
+          if (data.type === 'action_request') {
+            displayActions(data.data.selections);
+          } else if (data.type === 'game_start') {
+            updateStatus(true, 'ゲーム開始');
+          } else if (data.type === 'state_update') {
+            // ゲーム状態の更新処理を実装予定
+            console.log('Game state updated:', data.state);
+          }
+        };
+
+        socket.onclose = () => {
+          updateStatus(false, '接続が切断されました - 再接続中...');
+          setTimeout(connectWebSocket, 3000);
+        };
+
+        socket.onerror = (error) => {
+          console.error('WebSocket error:', error);
+          updateStatus(false, '接続エラー');
+        };
+
+      } catch (error) {
+        console.error('Failed to connect:', error);
+        updateStatus(false, '接続エラー - 再試行中...');
+        setTimeout(connectWebSocket, 3000);
+      }
+    }
+
+    // 初期接続
+    connectWebSocket();
+  </script>
+</body>
+</html>

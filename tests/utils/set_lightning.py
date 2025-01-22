@@ -1,12 +1,13 @@
-import pytest
 from unittest.mock import patch
-from game.cards import *
 
+import pytest
+
+from game.cards import *
 from game.deck import Deck
-from game.player import Player
 from game.energy import Energy
-from game.game import Game
 from game.exceptions import GameOverException
+from game.game import Game
+from game.player import Player
 
 
 def set_lightning():
