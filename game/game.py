@@ -10,6 +10,7 @@ class Game:
         self.turn = 0
         self.winner: Player | None = None
         self.loser: Player | None = None
+        self.is_active = False
 
     def set_players(self, player1: Player, player2: Player):
         self.player1 = player1
@@ -21,6 +22,7 @@ class Game:
 
     def start(self):
         # コイントスで先攻後攻を決める
+        self.is_active = True
         if random() < 0.5:
             self.active_player = self.player1
             self.waiting_player = self.player2
@@ -57,6 +59,8 @@ class Game:
                 self.waiting_player,
                 self.active_player,
             )
+        self.is_active = False
+        
 
     def get_player_by_name(self, name: str):
         if self.player1.name == name:

@@ -1,5 +1,11 @@
 import asyncio
 import logging
+import os
+import sys
+# root directoryをsys.pathに追加
+from pathlib import Path
+
+sys.path.append(str(Path(__file__).resolve().parents[1]))
 import uuid
 from datetime import datetime
 from enum import Enum
@@ -23,12 +29,14 @@ class ConnectionManager:
         self.waiting_players: List[str] = []
         self.active_games: Dict[str, "GameInstance"] = {}
         self.pending_actions: Dict[str, asyncio.Future] = {}
-        # メインスレッドのイベントループを保存
-        try:
-            self.event_loop = asyncio.get_running_loop()
-        except RuntimeError:
-            self.event_loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(self.event_loop)
+    
+    def set_event_loop(self):
+        if not hasattr(self, "event_loop"):
+            try:
+                self.event_loop = asyncio.get_event_loop()
+            except Exception as e:
+                print(str(e))
+
 
     async def request_action(self, client_id: str, selection: Dict[int, str]) -> int:
         """クライアントにアクション選択を要求し、結果を返す
@@ -101,8 +109,12 @@ class ConnectionManager:
             game_id = str(uuid.uuid4())
             game_instance = GameInstance(game_id, client_id, opponent_id, self)
             self.active_games[game_id] = game_instance
+            # send_game_state()をメインループに登録
+            game_instance.game.is_active = True
+            asyncio.create_task(game_instance.send_game_state())
             # 別スレッドでゲームを開始
             self.event_loop.run_in_executor(None, game_instance.start_game)
+
 
     async def send_personal_message(self, message: dict, client_id: str):
         """特定のクライアントにメッセージを送信"""
@@ -198,7 +210,7 @@ class GameInstance:
         self.player2_id = player2_id
         self.manager = manager
         self.game = Game()
-        self.state = None
+        self.state = GameState(self.game)
 
         # デッキの設定
         from tests.utils.set_lightning import lightning_deck
@@ -227,38 +239,12 @@ class GameInstance:
             future = asyncio.run_coroutine_threadsafe(
                 self._broadcast_to_players(start_message), self.manager.event_loop
             )
-            future.result(timeout=5.0)  # 5秒タイムアウト
+            print("This place ")
+            future.result(timeout=5)  # 5秒タイムアウト
 
             # 初期手札を配る
-            self.game.player1.deck.init_deck()
-            self.game.player2.deck.init_deck()
-            self.game.player1.draw(7)
-            self.game.player2.draw(7)
+            self.game.start()
 
-            # ゲームの準備
-            try:
-                self.game.player1.prepare()
-                self.game.player2.prepare()
-            except Exception as e:
-                logger.error(f"Error during game preparation: {str(e)}")
-                future = asyncio.run_coroutine_threadsafe(
-                    self._broadcast_to_players(
-                        {
-                            "type": "game_error",
-                            "message": "ゲームの準備中にエラーが発生しました",
-                        }
-                    ),
-                    self.manager.event_loop,
-                )
-                future.result(timeout=5.0)
-                return
-
-            # ゲーム状態の初期化と送信
-            self.state = GameState(self.game)
-            future = asyncio.run_coroutine_threadsafe(
-                self._send_game_state(), self.manager.event_loop
-            )
-            future.result(timeout=5.0)
 
         except Exception as e:
             logger.error(f"Unexpected error during game start: {str(e)}")
@@ -284,25 +270,25 @@ class GameInstance:
             else self.game.player2
         )
 
-        # アクション処理後のゲーム状態を更新
-        await self._send_game_state()
-
     async def _broadcast_to_players(self, message: dict):
         """両プレイヤーにメッセージを送信"""
         await self.manager.send_personal_message(message, self.player1_id)
         await self.manager.send_personal_message(message, self.player2_id)
 
-    async def _send_game_state(self):
+    async def send_game_state(self):
         """各プレイヤーに現在のゲーム状態を送信"""
-        if self.state:
-            await self.manager.send_personal_message(
-                {"type": "state_update", "state": self.state.to_dict(self.player1_id)},
-                self.player1_id,
-            )
-            await self.manager.send_personal_message(
-                {"type": "state_update", "state": self.state.to_dict(self.player2_id)},
-                self.player2_id,
-            )
+        while self.game.is_active:
+            if self.state:
+                logger.info(f"Sending game state to players in game {self.game_id}")
+                await self.manager.send_personal_message(
+                    {"type": "state_update", "state": self.state.to_dict(self.player1_id)},
+                    self.player1_id,
+                )
+                await self.manager.send_personal_message(
+                    {"type": "state_update", "state": self.state.to_dict(self.player2_id)},
+                    self.player2_id,
+                )
+            await asyncio.sleep(1.0)
 
 
 class NetworkPlayer(Player):
@@ -339,15 +325,12 @@ class NetworkPlayer(Player):
                 selected_index = future.result(timeout=30.0)  # 30秒タイムアウト
             except asyncio.TimeoutError:
                 logger.warning(f"Action selection timeout for client {self.client_id}")
-                return 0
+                
             except Exception as e:
                 logger.error(f"Error during action selection: {str(e)}")
-                return 0
 
             # 選択されたアクションが有効か確認
             if selected_index in action:
-                # アクションを実行
-                action[selected_index]()
                 return selected_index
             else:
                 logger.warning(f"Invalid action index selected: {selected_index}")
@@ -355,7 +338,7 @@ class NetworkPlayer(Player):
 
         except Exception as e:
             logger.error(f"Unexpected error in select_action: {str(e)}")
-            return 0
+
 
 
 # FastAPIアプリケーション
@@ -364,6 +347,7 @@ app = FastAPI()
 # 静的ファイルの提供設定
 app.mount("/static", StaticFiles(directory="client", html=True), name="static")
 
+mgr = ConnectionManager()
 
 # メインページの提供
 @app.get("/")
@@ -371,22 +355,20 @@ async def get_index():
     return RedirectResponse(url="/static/index.html")
 
 
-# グローバルなConnectionManagerインスタンス
-manager = ConnectionManager()
-
-
+# Modify websocket_endpoint to allow dependency injection for testing
 @app.websocket("/ws/{client_id}")
 async def websocket_endpoint(websocket: WebSocket, client_id: str):
-    await manager.connect(websocket, client_id)
+    mgr.set_event_loop()
+    await mgr.connect(websocket, client_id)
     try:
-        await manager.match_players(client_id)
+        await mgr.match_players(client_id)
         while True:
             data = await websocket.receive_json()
 
             # アクションレスポンスの処理
             if data["type"] == "action_response":
-                if client_id in manager.pending_actions:
-                    future = manager.pending_actions.pop(client_id)
+                if client_id in mgr.pending_actions:
+                    future = mgr.pending_actions.pop(client_id)
                     if not future.done():
                         try:
                             selected_index = int(data.get("selected_index", 0))
@@ -398,7 +380,7 @@ async def websocket_endpoint(websocket: WebSocket, client_id: str):
                     game_instance = next(
                         (
                             game
-                            for game in manager.active_games.values()
+                            for game in mgr.active_games.values()
                             if game.player1_id == client_id
                             or game.player2_id == client_id
                         ),
@@ -407,10 +389,10 @@ async def websocket_endpoint(websocket: WebSocket, client_id: str):
                     if game_instance:
                         await game_instance.handle_action(client_id, data)
     except WebSocketDisconnect:
-        manager.disconnect(client_id)
+        mgr.disconnect(client_id)
         # 切断時に保留中のアクションをキャンセル
-        if client_id in manager.pending_actions:
-            future = manager.pending_actions.pop(client_id)
+        if client_id in mgr.pending_actions:
+            future = mgr.pending_actions.pop(client_id)
             if not future.done():
                 future.cancel()
 
