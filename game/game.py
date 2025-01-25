@@ -6,6 +6,8 @@ from game.player import Player
 
 
 class Game:
+    max_turn = 30
+
     def __init__(self):
         self.turn = 0
         self.winner: Player | None = None
@@ -17,8 +19,8 @@ class Game:
         self.player2 = player2
         self.player1.set_game(self)
         self.player2.set_game(self)
-        self.active_player = None
-        self.waiting_player = None
+        self.active_player = player2
+        self.waiting_player = player1
 
     def start(self):
         # コイントスで先攻後攻を決める
@@ -47,10 +49,9 @@ class Game:
             self.active_player.draw()
             if self.turn > 1:
                 self.active_player.get_energy()
-            can_attack = self.turn > 1
             can_evolve = self.turn > 2
             try:
-                self.active_player.start_turn(can_attack, can_evolve)
+                self.active_player.start_turn(can_evolve=can_evolve)
             except GameOverException as e:
                 print(e)
                 break
@@ -60,7 +61,6 @@ class Game:
                 self.active_player,
             )
         self.is_active = False
-        
 
     def get_player_by_name(self, name: str):
         if self.player1.name == name:
@@ -72,3 +72,35 @@ class Game:
     def coin_toss(self):
         # 0が外れ　1が当たり
         return random() < 0.5
+
+    def simulate(self, phase: str = "goods"):
+        from AI.monte_carlo_player import MonteCarloPlayer
+
+        assert isinstance(self.active_player, MonteCarloPlayer)
+        assert isinstance(self.waiting_player, Player)
+        assert self.active_player.is_random and self.waiting_player.is_random
+
+        can_evolve = self.turn > 2
+        self.active_player.start_turn(phase=phase, can_evolve=can_evolve)
+        self.active_player, self.waiting_player = (
+            self.waiting_player,
+            self.active_player,
+        )
+
+        while self.turn < self.max_turn:
+            self.turn += 1
+            self.active_player.draw()
+            if self.turn > 1:
+                self.active_player.get_energy()
+            can_evolve = self.turn > 2
+            try:
+                self.active_player.start_turn(can_evolve=can_evolve)
+            except GameOverException as e:
+                break
+            self.active_player, self.waiting_player = (
+                self.waiting_player,
+                self.active_player,
+            )
+
+        self.is_active = False
+        return self.winner

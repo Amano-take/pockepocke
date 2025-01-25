@@ -221,12 +221,12 @@ class PockemonCard(Card):
         if len(opponent.bench) == 0:
             game.winner = opponent
             game.loser = my_player
-            raise GameOverException("勝利プレイヤー: " + str(self.opponent))
+            raise GameOverException(opponent)
 
         if opponent.sides >= 3:
             self.game.winner = opponent
             self.game.loser = my_player
-            raise GameOverException("勝利プレイヤー: " + str(self.opponent))
+            raise GameOverException(opponent)
 
         my_player.select_bench()
         return

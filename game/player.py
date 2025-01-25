@@ -156,14 +156,14 @@ class Player:
         )
 
     # 通常ターンの行動
-    def start_turn(self, can_attack: bool = True, can_evolve: bool = True):
+    def start_turn(self, can_evolve: bool = True):
         # TODO: 行動順の仮定を行う必要がある
         # goodsを使う
         self.use_goods()
         # trainerを使う
         self.use_trainer()
         # 手札のポケモンを進化させる
-        self.evolve_select()
+        self.evolve_select(can_evolve)
         # 手札のポケモンを出す
         self.use_pockemon_select()
         # エネルギーをつける
@@ -248,7 +248,10 @@ class Player:
         i = self.select_action(selection, action)
         action[i]()
 
-    def evolve_select(self):
+    def evolve_select(self, can_evolve: bool = True):
+        if not can_evolve:
+            return
+
         # 進化するポケモンを選ぶ
         field_pockemon = ddict(list)
         for i, card in enumerate([self.active_pockemon] + self.bench):
@@ -503,7 +506,7 @@ class Player:
     def select_bench(self):
         # active_pockemonが倒されたときの処理
         if len(self.bench) == 0:
-            raise GameOverException("勝利プレイヤー: " + str(self.opponent))
+            raise GameOverException(self.opponent)
 
         selection = {}
         action = {}
@@ -553,6 +556,13 @@ class Player:
         """Disable random action selection mode"""
         self.is_random = False
         logger.info(f"【{self.name}】ランダムモードを無効化しました")
+
+    def save_pkl(self, path=None):
+        if path is None:
+            path = f"./{self.name}.pkl"
+
+        with open(path, "wb") as f:
+            pickle.dump(self, f)
 
     def load_pkl(self, path=None):
         from game.game import Game

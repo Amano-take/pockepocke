@@ -1,10 +1,11 @@
-from game.player import Player
-from game.game import Game
+import copy
 import logging
 import pickle
 import random
-from typing import Dict, Callable, Tuple, List
-import copy
+from typing import Callable, Dict, List, Tuple
+
+from game.game import Game
+from game.player import Player
 
 logger = logging.getLogger(__name__)
 
@@ -22,12 +23,10 @@ class MonteCarloPlayer(Player):
         if len(selection) == 1:
             return 0
 
-        # 現在の状態を保存
-        with open("./player.pkl", "wb") as f:
-            pickle.dump(self, f)
+        phase = str()  # TODO
 
         # 各行動の評価値を計算
-        scores = self.evaluate_actions(selection, action)
+        scores = self.evaluate_actions(selection, action, phase)
 
         logger.debug(f"scores: {scores}")
         logger.debug(f"selection: {selection}")
@@ -36,33 +35,71 @@ class MonteCarloPlayer(Player):
         best_action = max(scores.items(), key=lambda x: x[1])[0]
         logger.debug(f"selected action: {best_action}")
 
-        # 元の状態に戻す
-        self.load_pkl()
-
         return best_action
 
+    # 通常ターンの行動
+    def start_turn(self, phase: str = "goods", can_evolve: bool = True):
+        phases = [
+            "goods",
+            "trainer",
+            "evolve",
+            "pockemon",
+            "energy",
+            "feature",
+            "retreat",
+            "attack",
+        ]
+        index = phases.index(phase)
+        if index == 0:
+            # goodsを使う
+            self.use_goods()
+        if index <= 1:
+            # trainerを使う
+            self.use_trainer()
+        if index <= 2:
+            # 手札のポケモンを進化させる
+            self.evolve_select(can_evolve=can_evolve)
+        if index <= 3:
+            # 手札のポケモンを出す
+            self.use_pockemon_select()
+        if index <= 4:
+            # エネルギーをつける
+            self.attach_energy_select()
+        if index <= 5:
+            # 特性を使う　# TODO: 対象指定が必要な特性
+            self.use_feature_select()
+        if index <= 6:
+            # 逃げる
+            self.retreat_select()
+        if index <= 7:
+            # 攻撃する
+            self.attack_select()
+        if index <= 8:
+            # ターン終了する
+            self.end_turn()
+        return
+
     def evaluate_actions(
-        self, selection: Dict[int, str], action: Dict[int, Callable]
+        self, selection: Dict[int, str], action: Dict[int, Callable], phase: str
     ) -> Dict[int, float]:
         """各行動の評価値を計算"""
         scores = {key: 0.0 for key in selection.keys()}
+        self.save_pkl()
+        self.opponent.save_pkl()
 
         for action_key in selection.keys():
-            # 行動を実行
-            # TODO: 相手の行動が必要なactionの場合バグの発生
-            # TODO:
-            action[action_key]()
+            self.opponent.set_random()
 
             # n_simulations回のシミュレーションを実行
             total_score = 0.0
             for _ in range(self.n_simulations):
                 # 状態をコピー
+                # 行動を実行
+                action[action_key]()
                 game_copy = copy.deepcopy(self.game)
-                player_copy = copy.deepcopy(self)
-                opponent_copy = copy.deepcopy(self.opponent)
 
                 # シミュレーション実行
-                score = self.simulate_game(game_copy, player_copy, opponent_copy)
+                score = self.simulate_game(game_copy, phase)
                 total_score += score
 
             # 平均スコアを計算
@@ -73,26 +110,17 @@ class MonteCarloPlayer(Player):
 
         return scores
 
-    def simulate_game(self, game: Game, player: Player, opponent: Player) -> float:
+    def simulate_game(self, game: Game, phase: str) -> float:
         """ゲームをシミュレート"""
-        for _ in range(self.simulation_depth):
-            # ゲーム終了判定
-            if player.sides == 0:  # 敗北
-                return 0.0
-            elif opponent.sides == 0:  # 勝利
-                return 1.0
-
-            # ランダムな行動を選択
-            try:
-                selection = {}  # TODO: 現在の選択可能な行動を取得
-                action = random.choice(list(selection.keys()))
-                # TODO: 行動を実行
-            except Exception:
-                # エラーが発生した場合は中間的な評価値を返す
-                break
-
-        # シミュレーション終了時の評価
-        return self.evaluate_state(player, opponent)
+        max_turn = 30
+        winner_name = game.simulate(phase)
+        if winner_name is None:
+            # 引き分け
+            return 0.5
+        elif winner_name == self.name:
+            return 1.0
+        else:
+            return 0.0
 
     def evaluate_state(self, player: Player, opponent: Player) -> float:
         """現在の状態を評価"""
