@@ -278,21 +278,25 @@ class Player:
         action = {}
         for act in result:
             selection[len(selection)] = f"{[card.name for card in act]}を進化させる"
-            action[len(action)] = [lambda card=card: self.evolve(card) for card in act]
+
+            def evolve(act=act):
+                for card in act:
+                    self.evolve(card)
+
+            action[len(action)] = evolve
 
         i = self.select_action(selection, action)
-        for act in action[i]:
-            act()
+        action[i]()
 
     def evolve(self, card: PockemonCard):
-        if not (card is self.active_pockemon or card in self.bench):
+        if not (card == self.active_pockemon or card in self.bench):
             return False
 
         for hand in self.hand_pockemon:
             if hand.previous_pockemon == card.name:
                 # 受けているダメージは引き継ぐ
                 damage = card.max_hp - card.hp
-                if card is self.active_pockemon:
+                if card == self.active_pockemon:
                     self.active_pockemon = hand
                     hand.hp = hand.max_hp - damage
                     # energyも引き継ぐ
@@ -532,8 +536,12 @@ class Player:
             # Return random valid index when in random mode
             i = random.choice(list(selection.keys()))
         else:
-            i = int(input())
-        assert i in selection
+            while True:
+                i = int(input("選択: "))
+                if i in selection:
+                    break
+                else:
+                    logger.info("無効な選択です")
         return i
 
     def set_random(self):
@@ -546,22 +554,18 @@ class Player:
         self.is_random = False
         logger.info(f"【{self.name}】ランダムモードを無効化しました")
 
-    def load_pkl(self, path="./player.pkl"):
+    def load_pkl(self, path=None):
         from game.game import Game
+
+        if path is None:
+            path = f"./{self.name}.pkl"
 
         with open(path, "rb") as f:
             loaded_obj = pickle.load(f)
             for key, value in loaded_obj.__dict__.items():
-                current_attr = getattr(self, key, None)
-                if isinstance(current_attr, list) and isinstance(value, list):
-                    current_attr.clear()
-                    current_attr.extend(value)
-                elif isinstance(current_attr, dict) and isinstance(value, dict):
-                    current_attr.clear()
-                    current_attr.update(value)
-                elif isinstance(current_attr, Game):
+                if isinstance(value, Game):
                     pass
-                elif isinstance(current_attr, Player):
+                elif isinstance(value, Player):
                     pass
                 else:
                     setattr(self, key, value)

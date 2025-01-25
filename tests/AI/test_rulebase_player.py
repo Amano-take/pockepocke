@@ -72,7 +72,7 @@ def test_select_action_single_choice():
     game, player, opponent = create_rulebase_game()
 
     selection = {0: "Only choice"}
-    result = player.select_action(selection)
+    result = player.select_action(selection, action={0: MagicMock()})
     assert result == 0
 
 

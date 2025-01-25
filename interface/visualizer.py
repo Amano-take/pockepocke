@@ -204,9 +204,9 @@ if __name__ == "__main__":
 
     deck = lightning_deck()
 
-    player1 = Player(Deck(deck), [Energy.LIGHTNING])
-    player1.name = "player1"
+    player1 = RuleBasePlayer(Deck(deck), [Energy.LIGHTNING])
+    player1.name = "rulebase1"
     player2 = RuleBasePlayer(Deck(deck), [Energy.LIGHTNING])
-    player2.name = "rulebase"
+    player2.name = "rulebase2"
     visualizer.set_players(player1, player2)
     visualizer.start()

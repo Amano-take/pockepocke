@@ -357,12 +357,18 @@ def test_evolve_select():
     game.active_player = player1
     game.waiting_player = player2
 
-    with patch.object(player1, "select_action", return_value=3) as mock:
+    with patch.object(player1, "select_action", return_value=0) as mock:
         player1.evolve_select()
         assert len(mock.call_args[0][0]) == 4
 
-    assert player1.active_pockemon.name == "Zeburaika"
-    assert player1.bench[0].name == "Zeburaika"
+    assert player1.active_pockemon.name == "Shimama"
+    assert player1.bench[0].name == "Shimama"
+
+    with patch.object(player1, "select_action", return_value=1) as mock:
+        player1.evolve_select()
+        assert len(mock.call_args[0][0]) == 4
+        assert player1.active_pockemon.name == "Zeburaika"
+        assert player1.bench[0].name == "Shimama"
 
 
 def test_retreat():

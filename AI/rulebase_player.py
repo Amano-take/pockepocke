@@ -55,17 +55,22 @@ class RuleBasePlayer(Player):
         return score
 
     def select_action(
-        self, selection: Dict[int, str], action: Dict[int, Callable] = {}
+        self, selection: Dict[int, str], action: Dict[int, Callable]
     ) -> int:
         """RuleBaseによる自動選択"""
         if len(selection) == 1:
             return 0
 
+        ids = set()
+
+        for card in self.deck.cards:
+            ids.add(card.id_)
+
         # picklesave
-        with open("./player.pkl", "wb") as f:
+        with open(f"./{self.name}.pkl", "wb") as f:
             pickle.dump(self, f)
 
-        with open("./opponent.pkl", "wb") as f:
+        with open(f"./{self.opponent.name}.pkl", "wb") as f:
             pickle.dump(self.opponent, f)
 
         scores = {}
@@ -74,8 +79,17 @@ class RuleBasePlayer(Player):
             self.opponent.set_random()
             action[key]()
             scores[key] = self.calculate_action_score()
-            self.load_pkl("player.pkl")
-            self.opponent.load_pkl("opponent.pkl")
+            self.load_pkl(f"{self.name}.pkl")
+            self.opponent.load_pkl(f"{self.opponent.name}.pkl")
+
+        for card in self.deck.cards:
+            assert card.id_ in ids
+
+        # delete pickles
+        import os
+
+        os.remove(f"./{self.name}.pkl")
+        os.remove(f"./{self.opponent.name}.pkl")
 
         logger.debug(f"scores: {scores}")
         logger.debug(f"selection: {selection}")

@@ -68,14 +68,19 @@ class Natsume(TrainerCard):
     def use(self, game: Game):
         selection = {}
         candidates = {}
+        action = {}
         for i, card in enumerate(game.waiting_player.bench):
             selection[i] = f"{card}とactiveを入れ替える"
-            candidates[i] = card
 
-        selected = game.waiting_player.select_action(selection)
-        game.waiting_player.bench.remove(candidates[selected])
-        game.waiting_player.bench.append(game.waiting_player.active_pockemon)
-        game.waiting_player.active_pockemon = candidates[selected]
+            def f(card=card):
+                game.waiting_player.bench.remove(card)
+                game.waiting_player.bench.append(game.waiting_player.active_pockemon)
+                game.waiting_player.active_pockemon = card
+
+            action[i] = f
+
+        selected = game.waiting_player.select_action(selection, action)
+        action[selected]()
         super().use(game)
 
     def can_use(self, game: Game):
