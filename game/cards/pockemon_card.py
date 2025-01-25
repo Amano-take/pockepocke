@@ -42,6 +42,8 @@ class PockemonStatus(Enum):
 
 
 class PockemonAttack:
+    damage = 10
+    required_energy: RequiredEnergy = RequiredEnergy([Energy.DARKNESS], 1)
 
     def __init__(self):
         self.name = self.__class__.__name__
@@ -68,7 +70,7 @@ class PockemonAttack:
     def set_type(self, type_: PockemonType):
         self.attack_type = type_
 
-    def attack(self, game: Game, target_pockemon: PockemonCard = None):
+    def attack(self, game: Game, target_pockemon: PockemonCard | None = None):
         if target_pockemon is None:
             target_pockemon = game.waiting_player.active_pockemon
         target_pockemon.get_damage(game, self.damage, self.attack_type)
