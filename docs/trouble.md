@@ -4,26 +4,23 @@
 
 ### online play めっちゃむずい問題
 
-1. gameモジュールはawaitableじゃない一方で、入出力を求めている
+#### 梗概
+Web知識
+
+#### 問題の原因
+gameモジュールはawaitableじゃない一方で、入出力を求めている
   -> fastapiと相性が悪すぎる
 
-Evaluating: future.result(timeout=10) did not finish after 3.00 seconds.
-This may mean a number of things:
-- This evaluation is really slow and this is expected.
-    In this case it's possible to silence this error by raising the timeout, setting the
-    PYDEVD_WARN_EVALUATION_TIMEOUT environment variable to a bigger value.
+#### 問題の解決方法
+1. gameモジュールをすべてawaitableにする。これが一番いい解決方法であると思ったが、作業量が多いわりに対して得られるものが少ないと思ったため、**非採用**。
+2. なんとか同期モジュールを実行する。
 
-- The evaluation may need other threads running while it's running:
-    In this case, it's possible to set the PYDEVD_UNBLOCK_THREADS_TIMEOUT
-    environment variable so that if after a given timeout an evaluation doesn't finish,
-    other threads are unblocked or you can manually resume all threads.
+    まずasyncioのevent_loop内でゲームモジュールを実行するわけにはいかなかった。
+    > gameモジュールは非同期なので、event loopを入力が得られるまでブロックする。一方で、ユーザーの入力を得るためには、await receive_json()に実行が移る必要がある。
+    ここでawaitableなreceive_json()は同期関数の中で実行できないので、event loopにreceive_jsonを登録する形で実行することになる。しかし、event_loopはロックされているので、この処理が終了することはない。
 
-    Alternatively, it's also possible to skip breaking on a particular thread by setting a
-    `pydev_do_not_trace = True` attribute in the related threading.Thread instance
-    (if some thread should always be running and no breakpoints are expected to be hit in it).
+    そこで、threadingによってこれを達成する。
+    > asyncio.run_in_executor(exec, func)によってthread(もしくはprocess)を新たに作ってそこで実行する。そしてユーザー入力はawaitableで実装されているので、event loopをインスタンス変数として保持しておいて、そこに登録する形で、実行することができる。
 
-- The evaluation is deadlocked:
-    In this case you may set the PYDEVD_THREAD_DUMP_ON_WARN_EVALUATION_TIMEOUT
-    environment variable to true so that a thread dump is shown along with this message and
-    optionally, set the PYDEVD_INTERRUPT_THREAD_TIMEOUT to some value so that the debugger
-    tries to interrupt the evaluation (if possible) when this happens.
+    これの実装に大きく手を焼いた。原因として、
+    asyncioを雰囲気で理解していたためなのが一番大きい。そして次にdebugの仕方がよくわかっていなかったこと。今まですべて同期関数でtestやdebugを行っていたので、非同期になったとたん大きく変わったのもしんどかった。
