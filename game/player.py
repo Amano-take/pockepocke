@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import os
 import pickle
 import random
 from collections import defaultdict as ddict
@@ -97,6 +98,22 @@ class Player:
     # 準備ターンの行動
     def prepare(self):
         # active_pockemonを選ぶ
+        self.pockemon_active_select()
+        # benchを選ぶ
+        self.pockemon_bench_select()
+
+        logger.info(
+            f"【{self.name}】{self.active_pockemon.name}をバトル場に配置しました"
+        )
+        if self.bench:
+            logger.info(
+                f"【{self.name}】ベンチに{', '.join([p.name for p in self.bench])}を配置しました"
+            )
+        logger.debug(
+            f"【{self.name}】手札のポケモン: {[p.name for p in self.hand_pockemon]}"
+        )
+
+    def pockemon_active_select(self):
         selection = {}
         action = {}
         manage_duplicates = set()
@@ -113,7 +130,7 @@ class Player:
         i = self.select_action(selection, action)
         action[i]()
 
-        # benchを選ぶ
+    def pockemon_bench_select(self):
         selection_list = []
         for i, card in enumerate(self.hand_pockemon):
             assert isinstance(card, PockemonCard)
@@ -144,24 +161,13 @@ class Player:
         i = self.select_action(selection, action)
         action[i]()
 
-        logger.info(
-            f"【{self.name}】{self.active_pockemon.name}をバトル場に配置しました"
-        )
-        if self.bench:
-            logger.info(
-                f"【{self.name}】ベンチに{', '.join([p.name for p in self.bench])}を配置しました"
-            )
-        logger.debug(
-            f"【{self.name}】手札のポケモン: {[p.name for p in self.hand_pockemon]}"
-        )
-
     # 通常ターンの行動
     def start_turn(self, can_evolve: bool = True):
         # TODO: 行動順の仮定を行う必要がある
         # goodsを使う
-        self.use_goods()
+        self.use_goods_select()
         # trainerを使う
-        self.use_trainer()
+        self.use_trainer_select()
         # 手札のポケモンを進化させる
         self.evolve_select(can_evolve)
         # 手札のポケモンを出す
@@ -367,7 +373,7 @@ class Player:
     def retreat_buff(self, value: int):
         self.retreat_cost_buff = value
 
-    def use_goods(self):
+    def use_goods_select(self):
         # ex. [[(kizugusuri, active), (kizugusuri, bench1)], (redcard), ...]
         goods_cards: list[list[tuple[GoodsCard, PockemonCard]] | GoodsCard] = []
         for card in self.hand_goods:
@@ -435,7 +441,7 @@ class Player:
             else "グッズカードは使用しませんでした"
         )
 
-    def use_trainer(self):
+    def use_trainer_select(self):
         trainer_cards: list[tuple[TrainerCard, PockemonCard | None]] = []
         for card in self.hand_trainer:
             if use_list := card.can_use(self.game):
@@ -579,6 +585,9 @@ class Player:
                     pass
                 else:
                     setattr(self, key, value)
+
+    def delete_pkl(self):
+        os.remove(f"{self.name}.pkl")
 
     def __str__(self):
         return self.name

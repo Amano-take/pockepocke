@@ -70,7 +70,7 @@ def test_energy():
     assert selevi_player2.can_attack(0) == False
 
 
-def test_use_goods():
+def test_use_goods_select():
     game.active_player = player1
     game.waiting_player = player2
     player1.draw(20)
@@ -91,7 +91,7 @@ def test_use_goods():
 
     assert len(player1.hand_goods) == 6
     with patch.object(player1, "select_action", return_value=44) as mock:
-        player1.use_goods()
+        player1.use_goods_select()
         # 引数のselectionのlenが18であることを確認
         assert len(mock.call_args[0][0]) == 45
         sum_hp = 0
@@ -236,14 +236,14 @@ def test_select_bench():
         assert len(mock.call_args[0][0]) == 2
 
 
-def test_use_trainers():
+def test_use_trainer_select():
     game, player1, player2 = set_lightning()
     player1.draw(20)
     player2.draw(20)
     game.active_player = player1
     game.waiting_player = player2
     with patch.object(player1, "select_action", return_value=0) as mock:
-        player1.use_trainer()
+        player1.use_trainer_select()
         assert len(mock.call_args[0][0]) == 3
 
 

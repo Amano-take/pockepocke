@@ -1,9 +1,11 @@
-import pytest
 from unittest.mock import patch
+
+import pytest
+
+from game.cards.pockemon_card import PockemonCard
 from game.cards.trainer_cards.trainers import HakaseResearcher
 from game.game import Game
 from game.player import Player
-from game.cards.pockemon_card import PockemonCard
 from tests.utils.set_lightning import set_lightning
 
 
@@ -16,7 +18,7 @@ def test_hakase_researcher():
     game.waiting_player = player2
 
     with patch.object(player1, "select_action", return_value=1):
-        player1.use_trainer()
+        player1.use_trainer_select()
 
     assert (
         len(player1.hand_goods) + len(player1.hand_pockemon) + len(player1.hand_trainer)

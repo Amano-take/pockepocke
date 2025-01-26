@@ -1,5 +1,6 @@
 import copy
 import logging
+import os
 import pickle
 import random
 from typing import Callable, Dict, List, Tuple
@@ -11,10 +12,9 @@ logger = logging.getLogger(__name__)
 
 
 class MonteCarloPlayer(Player):
-    def __init__(self, deck, energy_types, n_simulations=100, simulation_depth=10):
+    def __init__(self, deck, energy_types, n_simulations=100):
         super().__init__(deck, energy_types)
         self.n_simulations = n_simulations
-        self.simulation_depth = simulation_depth
 
     def select_action(
         self, selection: Dict[int, str], action: Dict[int, Callable] = {}
@@ -108,6 +108,9 @@ class MonteCarloPlayer(Player):
             # 元の状態に戻す
             self.load_pkl()
 
+        self.delete_pkl()
+        self.opponent.delete_pkl()
+
         return scores
 
     def simulate_game(self, game: Game, phase: str) -> float:
@@ -146,22 +149,3 @@ class MonteCarloPlayer(Player):
             )
 
         return score
-
-    def load_pkl(self):
-        """状態を復元"""
-        with open("./player.pkl", "rb") as f:
-            loaded_obj = pickle.load(f)
-            for key, value in loaded_obj.__dict__.items():
-                current_attr = getattr(self, key, None)
-                if isinstance(current_attr, list) and isinstance(value, list):
-                    current_attr.clear()
-                    current_attr.extend(value)
-                elif isinstance(current_attr, dict) and isinstance(value, dict):
-                    current_attr.clear()
-                    current_attr.update(value)
-                elif isinstance(current_attr, Game):
-                    pass
-                elif isinstance(current_attr, Player):
-                    pass
-                else:
-                    setattr(self, key, value)

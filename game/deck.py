@@ -47,7 +47,8 @@ class Deck:
             self.shuffle()
             for i in range(5):
                 if isinstance(self.cards[i], PockemonCard):
-                    card: PockemonCard = self.cards[i]
+                    card=self.cards[i]
+                    assert isinstance(card, PockemonCard)
                     if card.is_seed:
                         break
             else:
