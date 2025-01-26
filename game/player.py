@@ -123,7 +123,7 @@ class Player:
                 if card.name in manage_duplicates:
                     continue
                 manage_duplicates.add(card.name)
-                selection[len(selection)] = f"{card.name}をバトル場に出す"
+                selection[len(selection)] = f"[select_active] {card.name}をバトル場に出す"
                 action[len(action)] = lambda card=card: self.prepare_active_pockemon(
                     card
                 )
@@ -151,7 +151,7 @@ class Player:
                     tuple(sorted([self.hand_pockemon[j].name for j in comb]))
                 )
                 selection[len(selection)] = (
-                    f"{[self.hand_pockemon[j].name for j in comb]}をベンチに出す"
+                    f"[select_bench] {[self.hand_pockemon[j].name for j in comb]}をベンチに出す"
                 )
                 action[len(action)] = lambda comb=comb: [
                     self.prepare_bench_pockemon(self.hand_pockemon[j])
@@ -191,11 +191,11 @@ class Player:
         attack_list = self.candidate_attack()
         selection = {}
         action = {}
-        selection[len(selection)] = "ターンを終了する"
+        selection[len(selection)] = "[attack] ターンを終了する"
         action[len(action)] = lambda: None
         for i, attack in enumerate(attack_list):
             for target in attack.target_list(self.game):
-                selection[len(selection)] = f"{attack}を{target.name}使う"
+                selection[len(selection)] = f"[attack] {attack.name}を{target.name}に使用"
                 action[len(action)] = lambda attack=attack, target=target: self.attack(
                     attack, target
                 )
@@ -225,7 +225,7 @@ class Player:
     def retreat_select(self):
         selection = {}
         action = {}
-        selection[len(selection)] = "逃げない"
+        selection[len(selection)] = "[select_retreat] 逃げない"
         action[len(action)] = lambda: None
         manage_duplicates = set()
         if self.active_pockemon is None or not self.active_pockemon.can_retreat(
@@ -245,7 +245,7 @@ class Player:
                     continue
                 manage_duplicates.add(sorted_name)
                 selection[len(selection)] = (
-                    f"{self.active_pockemon.name}は{card.name}と{[energy.name for energy in comb]}交代する。"
+                    f"[select_retreat] {self.active_pockemon.name}は{card.name}と{[energy.name for energy in comb]}交代する。"
                 )
                 action[len(action)] = lambda card=card, comb=comb: self.retreat(
                     card, list(comb)
@@ -286,7 +286,7 @@ class Player:
         selection = {}
         action = {}
         for act in result:
-            selection[len(selection)] = f"{[card.name for card in act]}を進化させる"
+            selection[len(selection)] = f"[evolve] {[card.name for card in act]}を進化"
 
             def evolve(act=act):
                 for card in act:
@@ -344,17 +344,17 @@ class Player:
         action = {}
 
         # つけない場合
-        selection[len(selection)] = "エネルギーをつけない"
+        selection[len(selection)] = "[select_energy] エネルギーをつけない"
         action[len(action)] = lambda: None
 
         # アクティブポケモン
         if self.active_pockemon:
-            selection[len(selection)] = f"{self.active_pockemon}にエネルギーをつける"
+            selection[len(selection)] = f"[select_energy] {self.active_pockemon}にエネルギーをつける"
             action[len(action)] = lambda: self.attach_energy(self.active_pockemon)
 
         # ベンチポケモン
         for i, card in enumerate(self.bench):
-            selection[len(selection)] = f"{card}にエネルギーをつける"
+            selection[len(selection)] = f"[select_energy] {card}にエネルギーをつける"
             action[len(action)] = lambda card=card: self.attach_energy(card)
 
         i = self.select_action(selection, action)
@@ -379,7 +379,7 @@ class Player:
         for card in self.hand_goods:
             if card.name == "MonsterBall":
                 card.use(self.game)
-                logger.info(f"【{self.name}】{card.name}を使用しました")
+                logger.info(f"【{self.name}】[goods] {card.name}を使用しました")
             elif use_list := card.can_use(self.game):
                 # 対象なし
                 if use_list is True:
@@ -391,7 +391,7 @@ class Player:
         # それぞれ使うか使わないか,2**len(goods_cards)通り * 対象の選択肢
         selection = {}
         action = {}
-        selection[len(selection)] = "グッズカードを使用しない"
+        selection[len(selection)] = "[goods] グッズカードを使用しない"
         action[len(action)] = lambda: None
         manage_duplicates = set()
         for i in range(1, 2 ** len(goods_cards)):
@@ -422,7 +422,7 @@ class Player:
                     continue
                 manage_duplicates.add(sorted_name)
                 selection[len(selection)] = (
-                    f"{[(card.name + 'を' + pockemon.name + 'に' if isinstance(pockemon, PockemonCard) else card.name) for card, pockemon in use_goods]}"
+                    f"[goods] {[(card.name + 'を' + pockemon.name + 'に使用' if isinstance(pockemon, PockemonCard) else card.name + 'を使用') for card, pockemon in use_goods]}"
                 )
                 action[len(action)] = lambda use_goods=use_goods: [
                     (
@@ -450,22 +450,19 @@ class Player:
                 else:
                     trainer_cards.extend([(card, pockemon) for pockemon in use_list])
 
-        # 使用するかどうかの選択肢
         selection = {}
         action = {}
         manage_duplicates = set()
 
-        # 使用しない選択肢を追加
-        selection[len(selection)] = "トレーナーカードを使用しない"
+        selection[len(selection)] = "[trainer] トレーナーカードを使用しない"
         action[len(action)] = lambda: None
 
-        # 各トレーナーカード単体での使用
         for card, target in trainer_cards:
             if (card.name, id(target)) in manage_duplicates:
                 continue
             manage_duplicates.add((card.name, id(target)))
             selection[len(selection)] = (
-                f"{card.name}を{target.name}に使う" if target else f"{card.name}を使う"
+                f"[trainer] {card.name}を{target.name}に使用" if target else f"[trainer] {card.name}を使用"
             )
             action[len(action)] = lambda card=card, target=target: (
                 card.use(self.game, target) if target else card.use(self.game)
@@ -497,7 +494,7 @@ class Player:
                     tuple(sorted([self.hand_pockemon[j].name for j in comb]))
                 )
                 selection[len(selection)] = (
-                    f"{[self.hand_pockemon[j].name for j in comb]}をベンチに出す"
+                    f"[pockemon] {[self.hand_pockemon[j].name for j in comb]}をベンチに出す"
                 )
                 action[len(action)] = lambda comb=comb: [
                     self.prepare_bench_pockemon(self.hand_pockemon[j])
@@ -517,7 +514,7 @@ class Player:
         selection = {}
         action = {}
         for i, card in enumerate(self.bench):
-            selection[len(selection)] = f"{card}をアクティブに出す"
+            selection[len(selection)] = f"[select_active] {card.name}をアクティブに出す"
             action[len(action)] = (
                 lambda card=card: self.prepare_active_pockemon_from_bench(card)
             )
