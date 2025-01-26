@@ -104,3 +104,12 @@ class Game:
 
         self.is_active = False
         return self.winner
+
+    def is_finished(self) -> bool:
+        """ゲームが終了しているかどうかを判定"""
+        return not self.is_active or self.winner is not None or self.turn >= self.max_turn
+
+    def next_turn(self):
+        """次のターンに進む"""
+        self.active_player, self.waiting_player = self.waiting_player, self.active_player
+        self.turn += 1

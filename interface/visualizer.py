@@ -8,6 +8,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 import random
 
 from AI.rulebase_player import RuleBasePlayer
+from AI.monte_carlo_gene import MonteCarloGenePlayer
 from game import *
 
 
@@ -204,9 +205,9 @@ if __name__ == "__main__":
 
     deck = lightning_deck()
 
-    player1 = RuleBasePlayer(Deck(deck), [Energy.LIGHTNING])
-    player1.name = "rulebase1"
-    player2 = RuleBasePlayer(Deck(deck), [Energy.LIGHTNING])
-    player2.name = "rulebase2"
+    player1 = MonteCarloGenePlayer(Deck(deck), [Energy.LIGHTNING])
+    player1.name = "mctsplayer"
+    player2 = MonteCarloGenePlayer(Deck(deck), [Energy.LIGHTNING])
+    player2.name = "mctsplayer2"
     visualizer.set_players(player1, player2)
     visualizer.start()
