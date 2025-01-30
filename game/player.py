@@ -58,6 +58,7 @@ class Player:
                 return
             card = self.deck.draw()
             if isinstance(card, PockemonCard):
+                assert card is not None
                 self.hand_pockemon.append(card)
             elif isinstance(card, GoodsCard):
                 self.hand_goods.append(card)
@@ -562,7 +563,7 @@ class Player:
 
     def save_pkl(self, path=None):
         if path is None:
-            path = f"./{self.name}.pkl"
+            path = f"./data/{self.name}.pkl"
 
         with open(path, "wb") as f:
             pickle.dump(self, f)
@@ -571,7 +572,7 @@ class Player:
         from game.game import Game
 
         if path is None:
-            path = f"./{self.name}.pkl"
+            path = f"./data/{self.name}.pkl"
 
         with open(path, "rb") as f:
             loaded_obj = pickle.load(f)
@@ -584,7 +585,7 @@ class Player:
                     setattr(self, key, value)
 
     def delete_pkl(self):
-        os.remove(f"{self.name}.pkl")
+        os.remove(f"./data/{self.name}.pkl")
 
     def __str__(self):
         return self.name

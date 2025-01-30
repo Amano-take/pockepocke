@@ -1,6 +1,8 @@
 from enum import Enum
 from random import random
-
+import uuid
+import pickle
+import os
 from game.exceptions import GameOverException
 from game.player import Player
 
@@ -13,6 +15,7 @@ class Game:
         self.winner: Player | None = None
         self.loser: Player | None = None
         self.is_active = False
+        self.game_id = str(uuid.uuid4())
 
     def set_players(self, player1: Player, player2: Player):
         self.player1 = player1
@@ -73,19 +76,30 @@ class Game:
         # 0が外れ　1が当たり
         return random() < 0.5
 
-    def simulate(self, phase: str = "goods"):
+    def simulate(self, phase: str = "goods", name: str = "MonteCarloPlayer"):
         from AI.monte_carlo_player import MonteCarloPlayer
 
-        assert isinstance(self.active_player, MonteCarloPlayer)
-        assert isinstance(self.waiting_player, Player)
+        play_out_player = self.active_player if name == self.active_player.name else self.waiting_player
+        other_player = self.active_player if name == self.waiting_player.name else self.waiting_player
+
+        assert isinstance(play_out_player, MonteCarloPlayer)
         assert self.active_player.is_random and self.waiting_player.is_random
 
-        can_evolve = self.turn > 2
-        self.active_player.start_turn(phase=phase, can_evolve=can_evolve)
-        self.active_player, self.waiting_player = (
-            self.waiting_player,
-            self.active_player,
-        )
+        # prepare phaseの場合
+        if phase == "select_active":
+            assert False
+            play_out_player.prepare(phase)
+        elif phase == "select_bench":
+            play_out_player.prepare(phase)
+            other_player.prepare()
+        else:
+            assert self.active_player is play_out_player
+            can_evolve = self.turn > 2
+            play_out_player.start_turn(phase=phase, can_evolve=can_evolve)
+            self.active_player, self.waiting_player = (
+                self.waiting_player,
+                self.active_player,
+            )
 
         while self.turn < self.max_turn:
             self.turn += 1
@@ -104,6 +118,26 @@ class Game:
 
         self.is_active = False
         return self.winner
+
+    def save_pkl(self):
+        with open(f"data/game/{self.game_id}.pkl", "wb") as f:
+            pickle.dump(self, f)
+
+    def load_pkl(self):
+        with open(f"data/game/{self.game_id}.pkl", "rb") as f:
+            game = pickle.load(f)
+        assert game.game_id == self.game_id
+        # load self
+        for key, value in game.__dict__.items():
+            if isinstance(value, Player):
+                pass
+            else:
+                self.__dict__[key] = value
+
+        return self
+
+    def delete_pkl(self):
+        os.remove(f"data/game/{self.game_id}.pkl")
 
     def is_finished(self) -> bool:
         """ゲームが終了しているかどうかを判定"""

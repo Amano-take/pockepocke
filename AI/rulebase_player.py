@@ -75,7 +75,6 @@ class RuleBasePlayer(Player):
 
         scores = {}
         for key in selection.keys():
-            # TODO: 相手の行動が必要なactionの場合バグの発生
             self.opponent.set_random()
             action[key]()
             scores[key] = self.calculate_action_score()

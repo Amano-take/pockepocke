@@ -137,7 +137,7 @@ class PockemonCard(Card):
         return self.energies.get_sum() + buffer >= self.retreat_cost
 
     def retreat(self, buffer: int = 0, loss_energies: list[Energy] = []):
-        assert self.retreat_cost + buffer == len(loss_energies)
+        assert self.retreat_cost - buffer == len(loss_energies)
         for energy in loss_energies:
             self.energies.detach_energy(energy)
 

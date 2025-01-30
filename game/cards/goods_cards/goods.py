@@ -45,9 +45,8 @@ class KizuGusuri(GoodsCard):
 
 class MonsterBall(GoodsCard):
     def use(self, game: Game):
-        game.active_player.hand_pockemon.append(
-            game.active_player.deck.draw_seed_pockemon()
-        )
+        if card := game.active_player.deck.draw_seed_pockemon():
+            game.active_player.hand_pockemon.append(card)
         super().use(game)
 
 

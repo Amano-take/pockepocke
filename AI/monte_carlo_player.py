@@ -23,10 +23,16 @@ class MonteCarloPlayer(Player):
         if len(selection) == 1:
             return 0
 
-        phase = str()  # TODO
+        if self.is_random:
+            return random.randint(0, len(selection) - 1)
+
+        # selectionの最初の値から[...]の中身を抽出
+        first_selection = selection[0]
+        phase = first_selection[first_selection.find("[") + 1 : first_selection.find("]")]
+        next_phase = self.get_next_phase(phase)
 
         # 各行動の評価値を計算
-        scores = self.evaluate_actions(selection, action, phase)
+        scores = self.evaluate_actions(selection, action, next_phase)
 
         logger.debug(f"scores: {scores}")
         logger.debug(f"selection: {selection}")
@@ -37,6 +43,33 @@ class MonteCarloPlayer(Player):
 
         return best_action
 
+    def prepare(self, phase: str = "select_active"):
+        if phase == "select_active":
+            self.pockemon_active_select()
+            self.pockemon_bench_select()
+        elif phase == "select_bench":
+            self.pockemon_bench_select()
+        else:
+            raise ValueError(f"Invalid phase: {phase}")
+
+    def get_next_phase(self, phase: str) -> str:
+        if phase == "select_active":
+            return "select_bench"
+        elif phase == "select_bench":
+            return "goods"
+        phases = [
+            "goods",
+            "trainer",
+            "evolve",
+            "pockemon",
+            "select_energy",
+            "feature",
+            "select_retreat",
+            "attack",
+        ]
+        return phases[phases.index(phase) + 1]
+
+
     # 通常ターンの行動
     def start_turn(self, phase: str = "goods", can_evolve: bool = True):
         phases = [
@@ -44,18 +77,18 @@ class MonteCarloPlayer(Player):
             "trainer",
             "evolve",
             "pockemon",
-            "energy",
+            "select_energy",
             "feature",
-            "retreat",
+            "select_retreat",
             "attack",
         ]
         index = phases.index(phase)
         if index == 0:
             # goodsを使う
-            self.use_goods()
+            self.use_goods_select()
         if index <= 1:
             # trainerを使う
-            self.use_trainer()
+            self.use_trainer_select()
         if index <= 2:
             # 手札のポケモンを進化させる
             self.evolve_select(can_evolve=can_evolve)
@@ -89,17 +122,18 @@ class MonteCarloPlayer(Player):
 
         for action_key in selection.keys():
             self.opponent.set_random()
+            self.set_random()
 
             # n_simulations回のシミュレーションを実行
             total_score = 0.0
+            action[action_key]()
             for _ in range(self.n_simulations):
                 # 状態をコピー
                 # 行動を実行
-                action[action_key]()
                 game_copy = copy.deepcopy(self.game)
 
                 # シミュレーション実行
-                score = self.simulate_game(game_copy, phase)
+                score = self.simulate_game(game_copy, phase, name=self.name)
                 total_score += score
 
             # 平均スコアを計算
@@ -107,16 +141,18 @@ class MonteCarloPlayer(Player):
 
             # 元の状態に戻す
             self.load_pkl()
+            self.opponent.load_pkl()
+
 
         self.delete_pkl()
         self.opponent.delete_pkl()
 
         return scores
 
-    def simulate_game(self, game: Game, phase: str) -> float:
+    def simulate_game(self, game: Game, phase: str, name: str) -> float:
         """ゲームをシミュレート"""
         max_turn = 30
-        winner_name = game.simulate(phase)
+        winner_name = game.simulate(phase, name)
         if winner_name is None:
             # 引き分け
             return 0.5
