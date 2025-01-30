@@ -24,110 +24,89 @@ Evolution Selection:
 Options for evolving Pokémon.
 Example: "[evolve] [Pikachu]を進化"
 
-# Monte Carlo Method Implementation for Pokemon Card Game AI
+# モンテカルロ木探索（MCTS）の実装
 
-## Current Challenge
-The Pokemon card game has multiple decision points within a single turn:
-- Selecting which goods cards to use
-- Choosing energy attachments
-- Deciding on evolution
-- Selecting attacks
-- etc.
+## 概要
+モンテカルロ木探索は、ゲームAIにおける意思決定アルゴリズムです。このプロジェクトでは、ポケモンカードゲームにおいてMCTSを使用して最適な行動を選択します。
 
-This makes it difficult to implement Monte Carlo Tree Search (MCTS) in a straightforward way.
+## 主要コンポーネント
 
-## Proposed Solution: Action Sequence Approach
+### MonteCarloPlayerクラス
+- 基本クラス: `Player`
+- シミュレーション回数: デフォルトで100回
+- 主要な機能: ゲーム状態の評価、行動の選択、シミュレーションの実行
 
-### Core Concept
-Instead of handling each `select_action` separately, treat an entire turn as a single sequence of actions.
+### 行動選択プロセス
+
+1. **フェーズの管理**
+   - select_active: アクティブポケモンの選択
+   - select_bench: ベンチポケモンの選択
+   - goods: グッズカードの使用
+   - trainer: トレーナーカードの使用
+   - evolve: 進化の実行
+   - pockemon: 新しいポケモンの配置
+   - select_energy: エネルギーの付与
+   - feature: 特性の使用
+   - select_retreat: 退却の選択
+   - attack: 攻撃の実行
+
+2. **行動評価プロセス**
+   ```python
+   for each action:
+       score = 0
+       for n_simulations times:
+           score += simulate_game()
+       average_score = score / n_simulations
+   ```
+
+3. **状態評価基準**
+   - サイドカードの状況（30%）
+   - アクティブポケモンのHP比率（20%）
+   - 勝利/敗北条件の確認
+   - ベースライン評価（50%）
+
+## シミュレーション詳細
+
+### シミュレーションの流れ
+1. 現在の状態をコピー
+2. 選択可能な行動をリストアップ
+3. 各行動に対してシミュレーションを実行
+4. 結果を評価して最適な行動を選択
+
+### 評価スコア
+- 勝利: 1.0
+- 引き分け: 0.5
+- 敗北: 0.0
+
+## 実装の特徴
+
+### 最適化
+- 状態のセーブ/ロード機能
+- 効率的なシミュレーション
+- ランダム性の制御
+
+### 拡張性
+- 新しい評価基準の追加が容易
+- フェーズの追加/変更が可能
+- パラメータの調整が可能
+
+## 使用例
 
 ```python
-class ActionSequence:
-    def __init__(self):
-        self.actions = []  # List of actions to take in order
-        self.current_phase = 0
-
-    def add_action(self, action_type: str, choice: int):
-        self.actions.append((action_type, choice))
-
-    def get_next_action(self) -> tuple[str, int]:
-        if self.current_phase >= len(self.actions):
-            return None
-        action = self.actions[self.current_phase]
-        self.current_phase += 1
-        return action
-
-class MonteCarloPlayer(Player):
-    def __init__(self, deck: Deck, energies: list[Energy]):
-        super().__init__(deck, energies)
-        self.current_sequence = None
-
-    def select_action(self, selection: dict[int, str], action: dict[int, Callable]):
-        # Get action type from the selection string (e.g., "[attack]", "[goods]")
-        action_type = self._get_action_type(selection[0])
-
-        if self.current_sequence is None:
-            # Generate new sequence using MCTS
-            self.current_sequence = self._run_mcts()
-
-        # Get the pre-computed action for current phase
-        next_action = self.current_sequence.get_next_action()
-        if next_action[0] != action_type:
-            # Something unexpected happened, regenerate sequence
-            self.current_sequence = self._run_mcts()
-            next_action = self.current_sequence.get_next_action()
-
-        return next_action[1]  # Return the choice index
-
-    def _run_mcts(self) -> ActionSequence:
-        # Run Monte Carlo Tree Search to generate best action sequence
-        sequence = ActionSequence()
-
-        # Simulate multiple games
-        for _ in range(NUM_SIMULATIONS):
-            game_state = self._clone_current_state()
-            actions = self._simulate_game(game_state)
-            sequence = self._update_statistics(actions)
-
-        return sequence
+player = MonteCarloPlayer(deck, energy_types, n_simulations=100)
+action = player.select_action(selection, action)
 ```
 
-### Benefits
-1. **Simplified State Space**:
-   - Instead of having separate MCTS trees for each decision point, maintain one tree for entire turn sequences
-   - Reduces complexity of the search space
+## 今後の改善点
 
-2. **Better Strategy Learning**:
-   - AI can learn relationships between different actions in a turn
-   - Example: Saving energy for a powerful attack vs using it for retreat
+1. パラメータの最適化
+   - シミュレーション回数の調整
+   - 評価基準の重み付けの最適化
 
-3. **Easier Implementation**:
-   - No need for complex phase management
-   - More natural representation of game flow
+2. パフォーマンスの向上
+   - 並列処理の導入
+   - メモリ使用の最適化
 
-### Implementation Notes
-1. **Action Encoding**:
-   - Each action in the sequence should include:
-     - Action type (goods, energy, attack, etc.)
-     - Choice index within that action type
-     - Any required parameters
-
-2. **State Cloning**:
-   - Need efficient way to clone game state for simulations
-   - Consider implementing serialization methods
-
-3. **Simulation Strategy**:
-   - Use random playouts initially
-   - Can be enhanced with heuristics later
-   - Consider implementing progressive widening for large action spaces
-
-4. **Handling Unexpected States**:
-   - Have fallback mechanism when game state doesn't match expected sequence
-   - Can regenerate sequence or use simple heuristics
-
-## Next Steps
-1. Implement basic ActionSequence class
-2. Add state cloning functionality
-3. Create simple random playout mechanism
-4. Implement MCTS with action sequences
-5. Add heuristics to improve playout quality
+3. 評価関数の改善
+   - より詳細な状態評価
+   - 学習による評価関数の改善
