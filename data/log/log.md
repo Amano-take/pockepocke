@@ -1,0 +1,1 @@
+## this is log folder and the other txt files is ignored.

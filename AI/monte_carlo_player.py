@@ -1,10 +1,9 @@
 import copy
 import logging
-import os
-import pickle
 import random
 from typing import Callable, Dict, List, Tuple
 
+from game.exceptions import GameOverException
 from game.game import Game
 from game.player import Player
 
@@ -15,6 +14,11 @@ class MonteCarloPlayer(Player):
     def __init__(self, deck, energy_types, n_simulations=100):
         super().__init__(deck, energy_types)
         self.n_simulations = n_simulations
+        # save log to file
+        log_path = f"data/log/monte_carlo_player_{self.name}.txt"
+        logger.addHandler(logging.FileHandler(log_path))
+        logger.setLevel(logging.DEBUG)
+        logger.debug(f"Monte Carlo Player {self.name} initialized")
 
     def select_action(
         self, selection: Dict[int, str], action: Dict[int, Callable] = {}
@@ -23,13 +27,26 @@ class MonteCarloPlayer(Player):
         if len(selection) == 1:
             return 0
 
-        if self.is_random:
-            return random.randint(0, len(selection) - 1)
-
         # selectionの最初の値から[...]の中身を抽出
         first_selection = selection[0]
-        phase = first_selection[first_selection.find("[") + 1 : first_selection.find("]")]
+        phase = first_selection[
+            first_selection.find("[") + 1 : first_selection.find("]")
+        ]
+
+        if phase == "opponent_trainer":
+            # TODO: 相手のトレーナーに対して、どのカードを選択するか決めるところ。ターンのactive_playerは相手。
+            return 0
         next_phase = self.get_next_phase(phase)
+
+        if self.is_random:
+            if phase == "select_energy":
+                return 1
+            elif phase == "select_retreat":
+                return 0
+            elif phase == "attack":
+                return max(selection.keys())
+            else:
+                return random.randint(0, len(selection) - 1)
 
         # 各行動の評価値を計算
         scores = self.evaluate_actions(selection, action, next_phase)
@@ -57,6 +74,8 @@ class MonteCarloPlayer(Player):
             return "select_bench"
         elif phase == "select_bench":
             return "goods"
+        elif phase == "attack":
+            return "goods"
         phases = [
             "goods",
             "trainer",
@@ -68,7 +87,6 @@ class MonteCarloPlayer(Player):
             "attack",
         ]
         return phases[phases.index(phase) + 1]
-
 
     # 通常ターンの行動
     def start_turn(self, phase: str = "goods", can_evolve: bool = True):
@@ -126,7 +144,14 @@ class MonteCarloPlayer(Player):
 
             # n_simulations回のシミュレーションを実行
             total_score = 0.0
-            action[action_key]()
+            try:
+                action[action_key]()
+            except GameOverException as e:
+                if e.winner == self.opponent:
+                    scores[action_key] = -float("inf")
+                else:
+                    scores[action_key] = float("inf")
+                continue
             for _ in range(self.n_simulations):
                 # 状態をコピー
                 # 行動を実行
@@ -143,7 +168,6 @@ class MonteCarloPlayer(Player):
             self.load_pkl()
             self.opponent.load_pkl()
 
-
         self.delete_pkl()
         self.opponent.delete_pkl()
 
@@ -152,11 +176,11 @@ class MonteCarloPlayer(Player):
     def simulate_game(self, game: Game, phase: str, name: str) -> float:
         """ゲームをシミュレート"""
         max_turn = 30
-        winner_name = game.simulate(phase, name)
-        if winner_name is None:
+        winner_player = game.simulate(phase, name)
+        if winner_player is None:
             # 引き分け
             return 0.5
-        elif winner_name == self.name:
+        elif winner_player.name == self.name:
             return 1.0
         else:
             return 0.0

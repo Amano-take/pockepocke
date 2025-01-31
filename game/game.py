@@ -1,8 +1,9 @@
+import os
+import pickle
+import uuid
 from enum import Enum
 from random import random
-import uuid
-import pickle
-import os
+
 from game.exceptions import GameOverException
 from game.player import Player
 
@@ -47,7 +48,7 @@ class Game:
         self.turn_start()
 
     def turn_start(self):
-        while True:
+        while self.turn < self.max_turn:
             self.turn += 1
             self.active_player.draw()
             if self.turn > 1:
@@ -79,8 +80,16 @@ class Game:
     def simulate(self, phase: str = "goods", name: str = "MonteCarloPlayer"):
         from AI.monte_carlo_player import MonteCarloPlayer
 
-        play_out_player = self.active_player if name == self.active_player.name else self.waiting_player
-        other_player = self.active_player if name == self.waiting_player.name else self.waiting_player
+        play_out_player = (
+            self.active_player
+            if name == self.active_player.name
+            else self.waiting_player
+        )
+        other_player = (
+            self.active_player
+            if name == self.waiting_player.name
+            else self.waiting_player
+        )
 
         assert isinstance(play_out_player, MonteCarloPlayer)
         assert self.active_player.is_random and self.waiting_player.is_random
@@ -92,8 +101,11 @@ class Game:
         elif phase == "select_bench":
             play_out_player.prepare(phase)
             other_player.prepare()
+        elif phase == "goods":
+            if other_player.active_pockemon.name == "PockemonCard":
+                other_player.prepare()
         else:
-            assert self.active_player is play_out_player
+            assert play_out_player is self.active_player
             can_evolve = self.turn > 2
             play_out_player.start_turn(phase=phase, can_evolve=can_evolve)
             self.active_player, self.waiting_player = (
@@ -141,9 +153,14 @@ class Game:
 
     def is_finished(self) -> bool:
         """ゲームが終了しているかどうかを判定"""
-        return not self.is_active or self.winner is not None or self.turn >= self.max_turn
+        return (
+            not self.is_active or self.winner is not None or self.turn >= self.max_turn
+        )
 
     def next_turn(self):
         """次のターンに進む"""
-        self.active_player, self.waiting_player = self.waiting_player, self.active_player
+        self.active_player, self.waiting_player = (
+            self.waiting_player,
+            self.active_player,
+        )
         self.turn += 1

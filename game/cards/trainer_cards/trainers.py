@@ -70,7 +70,7 @@ class Natsume(TrainerCard):
         candidates = {}
         action = {}
         for i, card in enumerate(game.waiting_player.bench):
-            selection[i] = f"{card}とactiveを入れ替える"
+            selection[i] = f"[opponent_trainer] {card}とactiveを入れ替える"
 
             def f(card=card):
                 game.waiting_player.bench.remove(card)
