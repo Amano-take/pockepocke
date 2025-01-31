@@ -7,8 +7,8 @@ import time
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 import random
 
+from AI.monte_carlo_player import MonteCarloPlayer
 from AI.rulebase_player import RuleBasePlayer
-from AI.monte_carlo_gene import MonteCarloGenePlayer
 from game import *
 
 
@@ -18,6 +18,9 @@ class Visualizer:
         self.stop_event = threading.Event()
         # set random seed
         random.seed(0)
+
+    def set_game(self, game: Game):
+        self.game = game
 
     def set_players(self, player1: Player, player2: Player):
         self.game.set_players(player1, player2)
@@ -31,7 +34,7 @@ class Visualizer:
                 # Display turn and game state
                 border = "╔" + "═" * 48 + "╗\n"
                 f.write(border)
-                turn_text = f"Turn {self.game.turn}"
+                turn_text = f"Turn {self.game.turn}" if self.game.is_active else "Game Over"
                 padding = (48 - len(turn_text)) // 2
                 f.write(
                     "║"
@@ -171,7 +174,14 @@ class Visualizer:
                     )
                 f.write("\n")
                 f.flush()
+                if not self.game.is_active:
+                    break
                 time.sleep(1)
+            if self.game.winner:
+                f.write("Winner: " + str(self.game.winner.name) + "\n")
+            else:
+                # 引き分け
+                f.write("draw!!")
 
     def start(self):
         def signal_handler(signal, frame):
@@ -205,9 +215,9 @@ if __name__ == "__main__":
 
     deck = lightning_deck()
 
-    player1 = MonteCarloGenePlayer(Deck(deck), [Energy.LIGHTNING])
+    player1 = MonteCarloPlayer(Deck(deck), [Energy.LIGHTNING])
     player1.name = "mctsplayer"
-    player2 = MonteCarloGenePlayer(Deck(deck), [Energy.LIGHTNING])
+    player2 = MonteCarloPlayer(Deck(deck), [Energy.LIGHTNING])
     player2.name = "mctsplayer2"
     visualizer.set_players(player1, player2)
     visualizer.start()

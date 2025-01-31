@@ -15,7 +15,7 @@ class Game:
         self.turn = 0
         self.winner: Player | None = None
         self.loser: Player | None = None
-        self.is_active = False
+        self.is_active = True
         self.game_id = str(uuid.uuid4())
 
     def set_players(self, player1: Player, player2: Player):

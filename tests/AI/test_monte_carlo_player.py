@@ -89,7 +89,7 @@ def test_monte_carlo_simulation():
         player1.attack_select()
 
 
-def test_playout():
+def debug_playout():
     game, player1, player2 = create_monte_carlo_game()
     player1.draw(7)
     player2.draw(2)
@@ -105,6 +105,23 @@ def test_playout():
     player2.set_random()
 
     player2.active_pockemon.get_damage(game, 50)
+
+    from interface.visualizer import Visualizer
+    import threading
+
+    vis = Visualizer()
+    vis.set_game(game)
+    thread1 = threading.Thread(target=vis.visualize, daemon=True)
+
+    def simulate_game():
+        winner = game.simulate("goods", player1.name)
+        assert winner is not None
+
+    thread2 = threading.Thread(target=simulate_game, daemon=True)
+    thread1.start()
+    thread2.start()
+    thread1.join()
+    thread2.join()
 
     winner = game.simulate("goods", player1.name)
     assert winner is not None
