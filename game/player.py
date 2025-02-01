@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 
 class Player:
     def __init__(self, deck: Deck, energies: list[Energy]):
-        self.name = "player" + str(random.randint(1, 100))
+        self.name = "player" + str(random.randint(1, 1000))
         self.deck = deck
         self.energy_candidates = energies
         self.energy_values = [1] * len(Energy)
@@ -124,7 +124,9 @@ class Player:
                 if card.name in manage_duplicates:
                     continue
                 manage_duplicates.add(card.name)
-                selection[len(selection)] = f"[select_active] {card.name}をバトル場に出す"
+                selection[len(selection)] = (
+                    f"[select_active] {card.name}をバトル場に出す"
+                )
                 action[len(action)] = lambda card=card: self.prepare_active_pockemon(
                     card
                 )
@@ -196,7 +198,9 @@ class Player:
         action[len(action)] = lambda: None
         for i, attack in enumerate(attack_list):
             for target in attack.target_list(self.game):
-                selection[len(selection)] = f"[attack] {attack.name}を{target.name}に使用"
+                selection[len(selection)] = (
+                    f"[attack] {attack.name}を{target.name}に使用"
+                )
                 action[len(action)] = lambda attack=attack, target=target: self.attack(
                     attack, target
                 )
@@ -350,7 +354,9 @@ class Player:
 
         # アクティブポケモン
         if self.active_pockemon:
-            selection[len(selection)] = f"[select_energy] {self.active_pockemon}にエネルギーをつける"
+            selection[len(selection)] = (
+                f"[select_energy] {self.active_pockemon}にエネルギーをつける"
+            )
             action[len(action)] = lambda: self.attach_energy(self.active_pockemon)
 
         # ベンチポケモン
@@ -463,7 +469,9 @@ class Player:
                 continue
             manage_duplicates.add((card.name, id(target)))
             selection[len(selection)] = (
-                f"[trainer] {card.name}を{target.name}に使用" if target else f"[trainer] {card.name}を使用"
+                f"[trainer] {card.name}を{target.name}に使用"
+                if target
+                else f"[trainer] {card.name}を使用"
             )
             action[len(action)] = lambda card=card, target=target: (
                 card.use(self.game, target) if target else card.use(self.game)

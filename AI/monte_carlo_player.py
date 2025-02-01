@@ -7,6 +7,7 @@ from game.exceptions import GameOverException
 from game.game import Game
 from game.player import Player
 
+
 logger = logging.getLogger(__name__)
 
 
@@ -158,7 +159,7 @@ class MonteCarloPlayer(Player):
                 game_copy = copy.deepcopy(self.game)
 
                 # シミュレーション実行
-                score = self.simulate_game(game_copy, phase, name=self.name)
+                score = self.simulate_game(game_copy, phase)
                 total_score += score
 
             # 平均スコアを計算
@@ -173,12 +174,34 @@ class MonteCarloPlayer(Player):
 
         return scores
 
-    def simulate_game(self, game: Game, phase: str, name: str) -> float:
+    def simulate_game_with_rulebase(self, game: Game, phase: str) -> float:
         """ゲームをシミュレート"""
-        max_turn = 30
-        winner_player = game.simulate(phase, name)
+        from AI.rulebase_player import RuleBasePlayer
+
+        rulebase_player_me = RuleBasePlayer(self.deck, self.energy_candidates)
+        rulebase_player_opponent = RuleBasePlayer(
+            self.opponent.deck, self.opponent.energy_candidates
+        )
+        rulebase_player_me.load_pkl(f"data/{self.name}.pkl")
+        rulebase_player_opponent.load_pkl(f"data/{self.opponent.name}.pkl")
+
+        game.replace_player(self, rulebase_player_me)
+        game.replace_player(self.opponent, rulebase_player_opponent)
+        rulebase_player_me.set_game(game)
+        rulebase_player_opponent.set_game(game)
+
+        winner_player = game.simulate_with_rulebase(phase, self.name)
         if winner_player is None:
             # 引き分け
+            return 0.5
+        elif winner_player.name == rulebase_player_me.name:
+            return 1.0
+        else:
+            return 0.0
+
+    def simulate_game(self, game: Game, phase: str) -> float:
+        winner_player = game.simulate(phase, self.name)
+        if winner_player is None:
             return 0.5
         elif winner_player.name == self.name:
             return 1.0

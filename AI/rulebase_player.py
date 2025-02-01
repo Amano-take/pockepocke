@@ -1,9 +1,11 @@
 import logging
 import pickle
+import random
 from typing import Callable, Dict
 
 from game.game import Game
 from game.player import Player
+from game.exceptions import GameOverException
 
 logger = logging.getLogger(__name__)
 
@@ -54,6 +56,57 @@ class RuleBasePlayer(Player):
 
         return score
 
+    def prepare(self, phase: str = "select_active"):
+        if phase == "select_active":
+            self.pockemon_active_select()
+            self.pockemon_bench_select()
+        elif phase == "select_bench":
+            self.pockemon_bench_select()
+        else:
+            raise ValueError(f"Invalid phase: {phase}")
+
+    # 通常ターンの行動
+    def start_turn(self, can_evolve: bool = True, phase: str = "goods"):
+        phases = [
+            "goods",
+            "trainer",
+            "evolve",
+            "pockemon",
+            "select_energy",
+            "feature",
+            "select_retreat",
+            "attack",
+        ]
+        index = phases.index(phase)
+        if index == 0:
+            # goodsを使う
+            self.use_goods_select()
+        if index <= 1:
+            # trainerを使う
+            self.use_trainer_select()
+        if index <= 2:
+            # 手札のポケモンを進化させる
+            self.evolve_select(can_evolve=can_evolve)
+        if index <= 3:
+            # 手札のポケモンを出す
+            self.use_pockemon_select()
+        if index <= 4:
+            # エネルギーをつける
+            self.attach_energy_select()
+        if index <= 5:
+            # 特性を使う　# TODO: 対象指定が必要な特性
+            self.use_feature_select()
+        if index <= 6:
+            # 逃げる
+            self.retreat_select()
+        if index <= 7:
+            # 攻撃する
+            self.attack_select()
+        if index <= 8:
+            # ターン終了する
+            self.end_turn()
+        return
+
     def select_action(
         self, selection: Dict[int, str], action: Dict[int, Callable]
     ) -> int:
@@ -61,34 +114,37 @@ class RuleBasePlayer(Player):
         if len(selection) == 1:
             return 0
 
+        if self.is_random:
+            return random.randint(0, len(selection) - 1)
+
         ids = set()
 
         for card in self.deck.cards:
             ids.add(card.id_)
 
         # picklesave
-        with open(f"./{self.name}.pkl", "wb") as f:
-            pickle.dump(self, f)
-
-        with open(f"./{self.opponent.name}.pkl", "wb") as f:
-            pickle.dump(self.opponent, f)
-
+        self.save_pkl()
+        self.opponent.save_pkl()
         scores = {}
         for key in selection.keys():
             self.opponent.set_random()
-            action[key]()
+            try:
+                action[key]()
+            except GameOverException as e:
+                if e.winner.name == self.name:
+                    scores[key] = float("inf")
+                else:
+                    scores[key] = -float("inf")
+                continue
             scores[key] = self.calculate_action_score()
-            self.load_pkl(f"{self.name}.pkl")
-            self.opponent.load_pkl(f"{self.opponent.name}.pkl")
+            self.load_pkl()
+            self.opponent.load_pkl()
 
         for card in self.deck.cards:
             assert card.id_ in ids
 
-        # delete pickles
-        import os
-
-        os.remove(f"./{self.name}.pkl")
-        os.remove(f"./{self.opponent.name}.pkl")
+        self.delete_pkl()
+        self.opponent.delete_pkl()
 
         logger.debug(f"scores: {scores}")
         logger.debug(f"selection: {selection}")

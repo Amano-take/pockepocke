@@ -57,7 +57,7 @@ class Game:
             try:
                 self.active_player.start_turn(can_evolve=can_evolve)
             except GameOverException as e:
-                print(e)
+                self.winner = e.winner
                 break
 
             self.active_player, self.waiting_player = (
@@ -76,6 +76,66 @@ class Game:
     def coin_toss(self):
         # 0が外れ　1が当たり
         return random() < 0.5
+
+    def simulate_with_rulebase(
+        self, phase: str = "goods", name: str = "RuleBasePlayer"
+    ):
+        from AI.rulebase_player import RuleBasePlayer
+
+        play_out_player = (
+            self.active_player
+            if name == self.active_player.name
+            else self.waiting_player
+        )
+        other_player = (
+            self.active_player
+            if name == self.waiting_player.name
+            else self.waiting_player
+        )
+
+        assert isinstance(play_out_player, RuleBasePlayer)
+        assert isinstance(other_player, RuleBasePlayer)
+
+        play_out_player.unset_random()
+        other_player.unset_random()
+
+        # prepare phaseの場合
+        if phase == "select_active":
+            assert False
+            play_out_player.prepare(phase)
+        elif phase == "select_bench":
+            play_out_player.prepare(phase)
+            other_player.prepare()
+        elif phase == "goods":
+            if other_player.active_pockemon.name == "PockemonCard":
+                other_player.prepare()
+        else:
+            assert play_out_player is self.active_player
+            can_evolve = self.turn > 2
+            play_out_player.start_turn(phase=phase, can_evolve=can_evolve)
+            self.active_player, self.waiting_player = (
+                self.waiting_player,
+                self.active_player,
+            )
+
+        while self.turn < self.max_turn:
+            self.turn += 1
+            self.active_player.draw()
+            if self.turn > 1:
+                self.active_player.get_energy()
+            can_evolve = self.turn > 2
+            try:
+                self.active_player.start_turn(can_evolve=can_evolve)
+            except GameOverException as e:
+                self.winner = e.winner
+                break
+            self.active_player, self.waiting_player = (
+                self.waiting_player,
+                self.active_player,
+            )
+
+        self.is_active = False
+        return self.winner
 
     def simulate(self, phase: str = "goods", name: str = "MonteCarloPlayer"):
         from AI.monte_carlo_player import MonteCarloPlayer
@@ -122,6 +182,7 @@ class Game:
             try:
                 self.active_player.start_turn(can_evolve=can_evolve)
             except GameOverException as e:
+                self.winner = e.winner
                 break
             self.active_player, self.waiting_player = (
                 self.waiting_player,
@@ -164,3 +225,18 @@ class Game:
             self.active_player,
         )
         self.turn += 1
+
+    def replace_player(self, player: Player, new_player: Player):
+        if player is self.player1:
+            self.player1 = new_player
+        elif player is self.player2:
+            self.player2 = new_player
+        else:
+            raise ValueError("プレイヤーが見つかりません")
+
+        if self.active_player == player:
+            self.active_player = new_player
+        elif self.waiting_player == player:
+            self.waiting_player = new_player
+        else:
+            raise ValueError("プレイヤーが見つかりません")

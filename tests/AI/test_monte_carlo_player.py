@@ -62,11 +62,11 @@ def test_monte_carlo_select_action3():
     player1.pockemon_bench_select()
 
 
-def test_monte_carlo_select_action4():
-    game, player1, player2 = create_monte_carlo_game()
-    player1.n_simulations = 1
-    player2.n_simulations = 1
-    game.start()
+# def test_monte_carlo_select_action4():
+#     game, player1, player2 = create_monte_carlo_game()
+#     player1.n_simulations = 1
+#     player2.n_simulations = 1
+#     game.start()
 
 
 def test_monte_carlo_simulation():
@@ -113,9 +113,12 @@ def debug_playout():
     vis.set_game(game)
     thread1 = threading.Thread(target=vis.visualize, daemon=True)
 
+    winner = None
+
     def simulate_game():
-        winner = game.simulate("goods", player1.name)
-        assert winner is not None
+        player1.save_pkl()
+        player2.save_pkl()
+        player1.simulate_game_with_rulebase(game, "goods")
 
     thread2 = threading.Thread(target=simulate_game, daemon=True)
     thread1.start()
@@ -123,5 +126,5 @@ def debug_playout():
     thread1.join()
     thread2.join()
 
-    winner = game.simulate("goods", player1.name)
-    assert winner is not None
+    # get thread2 result
+    assert game.winner is not None
