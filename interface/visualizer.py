@@ -34,7 +34,9 @@ class Visualizer:
                 # Display turn and game state
                 border = "╔" + "═" * 48 + "╗\n"
                 f.write(border)
-                turn_text = f"Turn {self.game.turn}" if self.game.is_active else "Game Over"
+                turn_text = (
+                    f"Turn {self.game.turn}" if self.game.is_active else "Game Over"
+                )
                 padding = (48 - len(turn_text)) // 2
                 f.write(
                     "║"
@@ -217,7 +219,7 @@ if __name__ == "__main__":
 
     player1 = MonteCarloPlayer(Deck(deck), [Energy.LIGHTNING])
     player1.name = "mctsplayer"
-    player2 = MonteCarloPlayer(Deck(deck), [Energy.LIGHTNING])
-    player2.name = "mctsplayer2"
+    player2 = Player(Deck(deck), [Energy.LIGHTNING])
+    player2.name = "you"
     visualizer.set_players(player1, player2)
     visualizer.start()

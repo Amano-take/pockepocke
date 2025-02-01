@@ -26,6 +26,10 @@ class Game:
         self.active_player = player2
         self.waiting_player = player1
 
+    def shuffle_deck(self):
+        self.player1.deck.shuffle()
+        self.player2.deck.shuffle()
+
     def start(self):
         # コイントスで先攻後攻を決める
         self.is_active = True
@@ -240,3 +244,7 @@ class Game:
             self.waiting_player = new_player
         else:
             raise ValueError("プレイヤーが見つかりません")
+
+    def set_logger(self, loglevel):
+        self.player1.set_logger(loglevel)
+        self.player2.set_logger(loglevel)

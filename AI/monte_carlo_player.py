@@ -37,13 +37,14 @@ class MonteCarloPlayer(Player):
         if phase == "opponent_trainer":
             # TODO: 相手のトレーナーに対して、どのカードを選択するか決めるところ。ターンのactive_playerは相手。
             return 0
+        elif phase == "select_active_from_bench":
+            # TODO: ベンチからアクティブに出すポケモンを選択する
+            return 0
         next_phase = self.get_next_phase(phase)
 
         if self.is_random:
             if phase == "select_energy":
                 return 1
-            elif phase == "select_retreat":
-                return 0
             elif phase == "attack":
                 return max(selection.keys())
             else:
@@ -138,6 +139,7 @@ class MonteCarloPlayer(Player):
         scores = {key: 0.0 for key in selection.keys()}
         self.save_pkl()
         self.opponent.save_pkl()
+        self.game.set_logger(logging.WARN)
 
         for action_key in selection.keys():
             self.opponent.set_random()
@@ -171,7 +173,7 @@ class MonteCarloPlayer(Player):
 
         self.delete_pkl()
         self.opponent.delete_pkl()
-
+        self.game.set_logger(logging.DEBUG)
         return scores
 
     def simulate_game_with_rulebase(self, game: Game, phase: str) -> float:
@@ -200,6 +202,7 @@ class MonteCarloPlayer(Player):
             return 0.0
 
     def simulate_game(self, game: Game, phase: str) -> float:
+        game.shuffle_deck()
         winner_player = game.simulate(phase, self.name)
         if winner_player is None:
             return 0.5

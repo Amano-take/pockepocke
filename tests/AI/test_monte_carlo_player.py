@@ -89,6 +89,30 @@ def test_monte_carlo_simulation():
         player1.attack_select()
 
 
+def test_simulate_game():
+    game, player1, player2 = create_monte_carlo_game()
+    from copy import deepcopy
+
+    player1.set_random()
+    player2.set_random()
+    player1.draw(5)
+    player2.draw(5)
+
+    player1.prepare_active_pockemon(player1.hand_pockemon[0])
+    scores = {}
+    for i in range(5):
+        new_game = deepcopy(game)
+        new_game.shuffle_deck()
+        winner = new_game.simulate("select_bench", player1.name)
+        if winner is None:
+            scores[i] = 0.5
+        elif winner.name == player1.name:
+            scores[i] = 1.0
+        else:
+            scores[i] = 0.0
+    assert scores
+
+
 def debug_playout():
     game, player1, player2 = create_monte_carlo_game()
     player1.draw(7)

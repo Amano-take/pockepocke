@@ -523,7 +523,9 @@ class Player:
         selection = {}
         action = {}
         for i, card in enumerate(self.bench):
-            selection[len(selection)] = f"[select_active] {card.name}をアクティブに出す"
+            selection[len(selection)] = (
+                f"[select_active_from_bench] {card.name}をアクティブに出す"
+            )
             action[len(action)] = (
                 lambda card=card: self.prepare_active_pockemon_from_bench(card)
             )
@@ -597,6 +599,9 @@ class Player:
 
     def __str__(self):
         return self.name
+
+    def set_logger(self, loglevel):
+        logger.setLevel(loglevel)
 
 
 if __name__ == "__main__":
