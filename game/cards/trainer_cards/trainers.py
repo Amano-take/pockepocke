@@ -93,5 +93,11 @@ class Sakaki(TrainerCard):
         super().use(game)
 
 
+class Leaf(TrainerCard):
+    def use(self, game: Game):
+        game.active_player.retreat_buff(2)
+        super().use(game)
+
+
 if __name__ == "__main__":
     from game.game import Game

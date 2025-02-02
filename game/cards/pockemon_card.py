@@ -82,8 +82,8 @@ class PockemonCard(Card):
     weakness: PockemonType = PockemonType.NORMAL
     attacks: list[PockemonAttack] = []
     retreat_cost: int = 1
-    previous_pockemon: PockemonCard | None = None
-    next_pockemon: PockemonCard | None = None
+    previous_pockemon: str | None = None
+    next_pockemon: str | None = None
     is_ex: bool = False
 
     def __init__(self):
@@ -168,6 +168,7 @@ class PockemonCard(Card):
         self.energies.attach_energy(energy)
 
     def detach_energy(self, energy: Energy):
+
         self.energies.detach_energy(energy)
 
     def get_damage(
@@ -192,16 +193,16 @@ class PockemonCard(Card):
 
         return self.leave_battle(game)
 
-    def enter_battle(self):
-        self.feature_passive()
+    def enter_battle(self, game: Game):
+        self.feature_passive(game)
 
-    def feature_active(self):
+    def feature_active(self, game: Game):
         pass
 
-    def feature_passive(self):
+    def feature_passive(self, game: Game):
         pass
 
-    def reset_feature_passive(self):
+    def reset_feature_passive(self, game: Game):
         pass
 
     def leave_battle(self, game: Game):
@@ -210,7 +211,7 @@ class PockemonCard(Card):
             True ゲームを続ける
             False ゲーム終了
         """
-        self.reset_feature_passive()
+        self.reset_feature_passive(game)
         my_player = game.get_player_by_name(self.player)
         opponent = game.get_player_by_name(self.opponent)
 

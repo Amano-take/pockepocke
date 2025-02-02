@@ -35,6 +35,8 @@ class AttachedEnergies:
         self.energies[energy.value] += 1
 
     def detach_energy(self, energy: Energy):
+        if self.energies[energy.value] == 0:
+            return
         assert self.energies[energy.value] > 0
         self.energies[energy.value] -= 1
 

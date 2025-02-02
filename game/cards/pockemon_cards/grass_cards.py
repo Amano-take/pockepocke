@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from game.cards.pockemon_card import PockemonCard, PockemonType, PockemonAttack
 from game.energy import RequiredEnergy
 from game.energy import Energy
@@ -85,15 +87,18 @@ class Jaroda(PockemonCard):
 
     attacks = [TsuruNoMuchi()]
 
-    def feature_passive(self):
-        self.player.energy_values[Energy.GRASS] = 2
+    def feature_passive(self, game: Game):
+        player = game.get_player_by_name(self.player)
+        player.energy_values[Energy.GRASS.value] = 2
 
-    def reset_feature_passive(self):
-        for card in [self.player.active_pockemon] + self.player.bench:
+    def reset_feature_passive(self, game: Game):
+        player = game.get_player_by_name(self.player)
+
+        for card in [player.active_pockemon] + player.bench:
             if card and card.name == "Jaroda" and card != self:
-                card.player.energy_values[Energy.GRASS] = 2
+                break
             else:
-                card.player.energy_values[Energy.GRASS] = 1
+                player.energy_values[Energy.GRASS.value] = 1
 
 
 class Nemashu(PockemonCard):
@@ -134,3 +139,7 @@ class Dadarin(PockemonCard):
         required_energy = RequiredEnergy([Energy.GRASS], 0)
 
     attacks = [EnergyWhip()]
+
+
+if __name__ == "__main__":
+    from game.game import Game

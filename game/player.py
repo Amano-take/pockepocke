@@ -69,12 +69,12 @@ class Player:
 
     def prepare_active_pockemon(self, card: PockemonCard):
         self.active_pockemon: PockemonCard = card
-        card.enter_battle()
+        card.enter_battle(self.game)
         self.hand_pockemon.remove(card)
 
     def prepare_bench_pockemon(self, card: PockemonCard):
         self.bench.append(card)
-        card.enter_battle()
+        card.enter_battle(self.game)
         self.hand_pockemon.remove(card)
 
     def prepare_active_pockemon_from_bench(self, card: PockemonCard):
@@ -210,7 +210,7 @@ class Player:
 
     def use_feature_select(self):
         for card in [self.active_pockemon] + self.bench:
-            card.feature_active()
+            card.feature_active(self.game)
 
         return
 

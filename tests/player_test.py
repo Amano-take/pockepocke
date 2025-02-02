@@ -42,13 +42,20 @@ player2 = Player(Deck(deck_lightning), [Energy.LIGHTNING])
 game.set_players(player1, player2)
 
 
-def test_prepare():
-    player = Player(Deck(deck_lightning), [Energy.GRASS])
-    player.deck.init_deck()
-    player.draw(5)
+def get_game_player():
+    game = Game()
+    player1 = Player(Deck(deck_lightning), [Energy.LIGHTNING])
+    player2 = Player(Deck(deck_lightning), [Energy.LIGHTNING])
+    game.set_players(player1, player2)
+    return game, player1, player2
 
-    with patch.object(player, "select_action", return_value=0) as mock:
-        player.prepare()
+
+def test_prepare():
+    game, player1, player2 = get_game_player()
+    player1.draw(5)
+
+    with patch.object(player1, "select_action", return_value=0) as mock:
+        player1.prepare()
         mock.assert_called()
 
 

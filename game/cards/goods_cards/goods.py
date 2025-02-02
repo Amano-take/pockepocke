@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from game.cards.base_card import Card
 from game.cards.pockemon_card import PockemonCard, PockemonType
+import random
 
 
 class GoodsCard(Card):
@@ -103,6 +104,36 @@ class MaboroshinoSekibann(GoodsCard):
             game.active_player.hand_pockemon.append(card)
         else:
             game.active_player.deck.extend_last(card)
+
+        super().use(game)
+
+
+class PockemonConnection(GoodsCard):
+    def can_use(self, game: Game) -> list[PockemonCard]:
+        return game.active_player.hand_pockemon
+
+    def use(self, game: Game, target: PockemonCard):
+        # swap hand and deck
+        cand = []
+        for i, card in enumerate(game.active_player.deck.cards):
+            if isinstance(card, PockemonCard):
+                cand.append(i)
+
+        if len(cand) == 0:
+            return
+
+        hand_index = game.active_player.hand_pockemon.index(target)
+
+        # randomly
+        i = random.randint(0, len(cand) - 1)
+
+        (
+            game.active_player.deck.cards[cand[i]],
+            game.active_player.hand_pockemon[hand_index],
+        ) = (
+            game.active_player.hand_pockemon[hand_index],
+            game.active_player.deck.cards[cand[i]],
+        )
 
         super().use(game)
 
