@@ -110,5 +110,14 @@ class Cernight(PockemonCard):
         player.active_pockemon.attach_energy(Energy.PSYCHIC)
 
 
+# 超タイプのポケモンカードリスト
+PSYCHIC_CARDS: list[type[PockemonCard]] = [
+    MewtwoEX,
+    MewEX,
+    Ralts,
+    Kirlia,
+    Cernight,
+]
+
 if __name__ == "__main__":
     from game.game import Game

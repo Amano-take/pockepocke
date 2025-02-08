@@ -2,8 +2,6 @@ import asyncio
 import logging
 import os
 import sys
-
-# root directoryをsys.pathに追加
 from pathlib import Path
 
 sys.path.append(str(Path(__file__).resolve().parents[1]))
@@ -12,14 +10,17 @@ from datetime import datetime
 from enum import Enum
 from typing import Callable, Dict, List, Optional
 
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
-from fastapi.responses import RedirectResponse
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Request
+from fastapi.responses import RedirectResponse, HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
 
 from game.deck import Deck
 from game.energy import Energy
 from game.game import Game
 from game.player import Player
+from game.cards import POKEMON_CARDS, GOODS_CARDS, TRAINER_CARDS
+from server.database import save_deck_to_db, get_decks_by_client_id, delete_deck
 
 logger = logging.getLogger(__name__)
 
@@ -30,6 +31,7 @@ class ConnectionManager:
         self.waiting_players: List[str] = []
         self.active_games: Dict[str, "GameInstance"] = {}
         self.pending_actions: Dict[str, asyncio.Future] = {}
+        self.player_decks: Dict[str, dict] = {}
 
     def set_event_loop(self):
         if not hasattr(self, "event_loop"):
@@ -327,36 +329,242 @@ class NetworkPlayer(Player):
 
             try:
                 selected_index = future.result(timeout=30.0)  # 30秒タイムアウト
+                # 選択されたアクションが有効か確認
+                if selected_index in action:
+                    return selected_index
+                logger.warning(f"Invalid action index selected: {selected_index}")
+                return 0
             except asyncio.TimeoutError:
                 logger.warning(f"Action selection timeout for client {self.client_id}")
-
+                return 0
             except Exception as e:
                 logger.error(f"Error during action selection: {str(e)}")
-
-            # 選択されたアクションが有効か確認
-            if selected_index in action:
-                return selected_index
-            else:
-                logger.warning(f"Invalid action index selected: {selected_index}")
                 return 0
 
         except Exception as e:
             logger.error(f"Unexpected error in select_action: {str(e)}")
+            return 0
 
 
-# FastAPIアプリケーション
+# テンプレートとスタティックファイルの設定
+templates = Jinja2Templates(directory=str(Path(__file__).parent.parent / "templates"))
 app = FastAPI()
-
-# 静的ファイルの提供設定
-app.mount("/static", StaticFiles(directory="client", html=True), name="static")
+app.mount(
+    "/static",
+    StaticFiles(directory=str(Path(__file__).parent.parent / "static")),
+    name="static",
+)
 
 mgr = ConnectionManager()
 
 
 # メインページの提供
 @app.get("/")
-async def get_index():
-    return RedirectResponse(url="/static/index.html")
+async def get_index(request: Request):
+    return templates.TemplateResponse("index.html", {"request": request})
+
+
+# デッキビルダーページの提供
+@app.get("/deck-builder")
+async def get_deck_builder(request: Request):
+    return templates.TemplateResponse("deck_builder.html", {"request": request})
+
+
+def get_pokemon_type_ja(type_str: str) -> str:
+    type_mapping = {
+        "grass": "くさ",
+        "fire": "ほのお",
+        "water": "みず",
+        "lightning": "でんき",
+        "psychic": "エスパー",
+        "fighting": "かくとう",
+        "darkness": "あく",
+        "metal": "はがね",
+        "dragon": "ドラゴン",
+        "normal": "ノーマル",
+    }
+    return type_mapping.get(type_str, type_str)
+
+
+# カード一覧のAPI
+@app.get("/api/cards")
+async def get_available_cards():
+    """利用可能なカードの一覧を返す"""
+    cards = []
+
+    # ポケモンカードの追加
+    for card_class in POKEMON_CARDS:
+        card = card_class()
+        pokemon_type = str(card.type) if hasattr(card, "type") else None
+        cards.append(
+            {
+                "id": card.name,
+                "name": card.name,
+                "type": (
+                    "basic_pokemon" if card.previous_pockemon is None else "pokemon"
+                ),
+                "hp": card.max_hp,
+                "category": "pokemon",
+                "pokemon_type": (
+                    get_pokemon_type_ja(pokemon_type) if pokemon_type else None
+                ),
+            }
+        )
+
+    # グッズカードの追加
+    for card_class in GOODS_CARDS:
+        card = card_class()
+        cards.append(
+            {"id": card.name, "name": card.name, "type": "goods", "category": "goods"}
+        )
+
+    # トレーナーカードの追加
+    for card_class in TRAINER_CARDS:
+        card = card_class()
+        cards.append(
+            {
+                "id": card.name,
+                "name": card.name,
+                "type": "trainer",
+                "category": "trainer",
+            }
+        )
+
+    return JSONResponse(content=cards)
+
+
+def validate_deck(deck_data: dict) -> tuple[bool, str]:
+    cards = deck_data.get("cards", [])
+    energy = deck_data.get("energy")
+
+    if len(cards) != 20:
+        return False, f"デッキは20枚である必要があります（現在: {len(cards)}枚）"
+
+    # カードの重複チェック
+    card_counts = {}
+    for card_id in cards:
+        card_counts[card_id] = card_counts.get(card_id, 0) + 1
+        if card_counts[card_id] > 2:
+            return (
+                False,
+                f"同じカードは2枚までしか入れられません（{card_id}: {card_counts[card_id]}枚）",
+            )
+
+    # 種ポケモンの存在チェック
+    has_basic_pokemon = False
+    for card_id in cards:
+        for card_class in POKEMON_CARDS:
+            card = card_class()
+            if card.name == card_id and hasattr(card, "is_seed") and card.is_seed:
+                has_basic_pokemon = True
+                break
+        if has_basic_pokemon:
+            break
+
+    if not has_basic_pokemon:
+        return False, "デッキには最低1枚の種ポケモンが必要です"
+
+    if not energy:
+        return False, "エナジーの種類を選択してください"
+
+    return True, "バリデーション成功"
+
+
+# デッキ一覧ページの提供
+@app.get("/decks")
+async def get_deck_list(request: Request):
+    return templates.TemplateResponse("deck_list.html", {"request": request})
+
+
+# デッキ一覧の取得API
+@app.get("/api/decks")
+async def get_decks(request: Request):
+    client_id = request.cookies.get("client_id")
+    if not client_id:
+        return JSONResponse(
+            content={"error": "クライアントIDが見つかりません"}, status_code=400
+        )
+
+    decks = get_decks_by_client_id(client_id)
+    return JSONResponse(content=decks)
+
+
+# デッキの削除API
+@app.delete("/api/decks/{deck_id}")
+async def delete_deck_api(deck_id: int, request: Request):
+    client_id = request.cookies.get("client_id")
+    if not client_id:
+        return JSONResponse(
+            content={"error": "クライアントIDが見つかりません"}, status_code=400
+        )
+
+    if delete_deck(deck_id, client_id):
+        return JSONResponse(content={"status": "success"})
+    else:
+        return JSONResponse(
+            content={"error": "デッキの削除に失敗しました"}, status_code=500
+        )
+
+
+# デッキの使用API
+@app.post("/api/decks/{deck_id}/use")
+async def use_deck(deck_id: int, request: Request):
+    client_id = request.cookies.get("client_id")
+    if not client_id:
+        return JSONResponse(
+            content={"error": "クライアントIDが見つかりません"}, status_code=400
+        )
+
+    decks = get_decks_by_client_id(client_id)
+    target_deck = next((deck for deck in decks if deck["id"] == deck_id), None)
+
+    if not target_deck:
+        return JSONResponse(
+            content={"error": "デッキが見つかりません"}, status_code=404
+        )
+
+    # デッキを使用中に設定
+    mgr.player_decks[client_id] = {
+        "cards": target_deck["cards"],
+        "energy": target_deck["energy"],
+    }
+
+    return JSONResponse(content={"status": "success"})
+
+
+# デッキの保存API（既存のものを修正）
+@app.post("/api/save-deck")
+async def save_deck(request: Request):
+    try:
+        data = await request.json()
+        client_id = request.cookies.get("client_id")
+        if not client_id:
+            client_id = str(uuid.uuid4())
+
+        # デッキのバリデーション
+        is_valid, message = validate_deck(data)
+        if not is_valid:
+            return JSONResponse(content={"error": message}, status_code=400)
+
+        # デッキ名の取得（デフォルトは現在の日時）
+        deck_name = data.get(
+            "name", f"デッキ {datetime.now().strftime('%Y/%m/%d %H:%M')}"
+        )
+
+        # デッキをデータベースに保存
+        if save_deck_to_db(client_id, deck_name, data["cards"], data["energy"]):
+            return JSONResponse(
+                content={"status": "success", "message": "デッキを保存しました"}
+            )
+        else:
+            return JSONResponse(
+                content={"error": "デッキの保存に失敗しました"}, status_code=500
+            )
+    except Exception as e:
+        logger.error(f"Error saving deck: {str(e)}")
+        return JSONResponse(
+            content={"error": "デッキの保存中にエラーが発生しました"}, status_code=500
+        )
 
 
 # Modify websocket_endpoint to allow dependency injection for testing
@@ -404,4 +612,4 @@ async def websocket_endpoint(websocket: WebSocket, client_id: str):
 if __name__ == "__main__":
     import uvicorn
 
-    uvicorn.run(app, host="0.0.0.0", port=8080)
+    uvicorn.run(app, host="0.0.0.0", port=8000)

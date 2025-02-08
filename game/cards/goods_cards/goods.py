@@ -138,5 +138,16 @@ class PockemonConnection(GoodsCard):
         super().use(game)
 
 
+# グッズカードリスト
+GOODS_CARDS: list[type[GoodsCard]] = [
+    KizuGusuri,
+    MonsterBall,
+    Speeder,
+    RedCard,
+    PockemonnoHue,
+    MaboroshinoSekibann,
+    PockemonConnection,
+]
+
 if __name__ == "__main__":
     from game.game import Game
