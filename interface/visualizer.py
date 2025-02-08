@@ -217,7 +217,9 @@ if __name__ == "__main__":
 
     deck = lightning_deck()
 
-    player1 = MonteCarloPlayer(Deck(deck), [Energy.LIGHTNING])
+    player1 = MonteCarloPlayer(
+        Deck(deck), [Energy.LIGHTNING], n_simulations=10, is_rulebase=True
+    )
     player1.name = "mctsplayer"
     player2 = Player(Deck(deck), [Energy.LIGHTNING])
     player2.name = "you"

@@ -62,11 +62,11 @@ def test_monte_carlo_select_action3():
     player1.pockemon_bench_select()
 
 
-# def test_monte_carlo_select_action4():
-#     game, player1, player2 = create_monte_carlo_game()
-#     player1.n_simulations = 1
-#     player2.n_simulations = 1
-#     game.start()
+def test_monte_carlo_select_action4():
+    game, player1, player2 = create_monte_carlo_game()
+    player1.n_simulations = 1
+    player2.n_simulations = 1
+    game.start()
 
 
 def test_monte_carlo_simulation():
@@ -152,3 +152,7 @@ def debug_playout():
 
     # get thread2 result
     assert game.winner is not None
+
+
+if __name__ == "__main__":
+    test_monte_carlo_select_action4()

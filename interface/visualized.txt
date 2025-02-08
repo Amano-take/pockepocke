@@ -1,5 +1,5 @@
 ╔════════════════════════════════════════════════╗
-║                     Turn 1                     ║
+║                     Turn 3                     ║
 ╚════════════════════════════════════════════════╝
 
 PLAYER 1: mctsplayer
@@ -7,9 +7,11 @@ Prize Cards:
 Active Pokemon:
   PikachuEX            HP:[120/120 ████████████████████]
 Bench:
+  1. ThunderEX          HP:[130/130 ████████████████████]
 Hand:
-  Goods: KizuGusuri, Speeder, MonsterBall
-  Trainer: HakaseResearcher
+  Pokemon: Zeburaika
+  Goods: KizuGusuri, Speeder, KizuGusuri
+  Trainer: Sakaki
 
                     VS
 
@@ -18,6 +20,7 @@ Prize Cards:
 Active Pokemon:
   PikachuEX            HP:[120/120 ████████████████████]
 Bench:
+  1. Shimama            HP:[60/60 ████████████████████]
 Hand:
   Pokemon: Shimama
   Goods: Speeder, Speeder

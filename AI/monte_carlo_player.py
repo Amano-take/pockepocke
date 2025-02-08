@@ -8,18 +8,17 @@ from game.game import Game
 from game.player import Player
 
 
-logger = logging.getLogger(__name__)
-
-
 class MonteCarloPlayer(Player):
-    def __init__(self, deck, energy_types, n_simulations=100):
+    def __init__(self, deck, energy_types, n_simulations=100, is_rulebase=False):
         super().__init__(deck, energy_types)
         self.n_simulations = n_simulations
         # save log to file
         log_path = f"data/log/monte_carlo_player_{self.name}.txt"
-        logger.addHandler(logging.FileHandler(log_path))
-        logger.setLevel(logging.DEBUG)
-        logger.debug(f"Monte Carlo Player {self.name} initialized")
+        self.logger = logging.getLogger(__name__)
+        self.logger.addHandler(logging.FileHandler(log_path))
+        self.logger.setLevel(logging.DEBUG)
+        self.logger.debug(f"Monte Carlo Player {self.name} initialized")
+        self.is_rulebase = is_rulebase
 
     def select_action(
         self, selection: Dict[int, str], action: Dict[int, Callable] = {}
@@ -53,12 +52,12 @@ class MonteCarloPlayer(Player):
         # 各行動の評価値を計算
         scores = self.evaluate_actions(selection, action, next_phase)
 
-        logger.debug(f"scores: {scores}")
-        logger.debug(f"selection: {selection}")
+        self.logger.debug(f"scores: {scores}")
+        self.logger.debug(f"selection: {selection}")
 
         # 最も評価値の高い行動を選択
         best_action = max(scores.items(), key=lambda x: x[1])[0]
-        logger.debug(f"selected action: {best_action}")
+        self.logger.debug(f"selected action: {best_action}")
 
         return best_action
 
@@ -137,9 +136,8 @@ class MonteCarloPlayer(Player):
     ) -> Dict[int, float]:
         """各行動の評価値を計算"""
         scores = {key: 0.0 for key in selection.keys()}
-        self.save_pkl()
-        self.opponent.save_pkl()
-        self.game.set_logger(logging.WARN)
+        self.save_pkl(f"data/{self.name}_monte_carlo.pkl")
+        self.opponent.save_pkl(f"data/{self.opponent.name}_monte_carlo.pkl")
 
         for action_key in selection.keys():
             self.opponent.set_random()
@@ -155,25 +153,29 @@ class MonteCarloPlayer(Player):
                 else:
                     scores[action_key] = float("inf")
                 continue
-            for _ in range(self.n_simulations):
+            for i in range(self.n_simulations):
+                # 進行状況をログに出力
+                self.logger.warning(f"progress: {i}/{self.n_simulations}")
                 # 状態をコピー
                 # 行動を実行
                 game_copy = copy.deepcopy(self.game)
 
                 # シミュレーション実行
-                score = self.simulate_game(game_copy, phase)
+                if self.is_rulebase:
+                    score = self.simulate_game_with_rulebase(game_copy, phase)
+                else:
+                    score = self.simulate_game(game_copy, phase)
                 total_score += score
 
             # 平均スコアを計算
             scores[action_key] = total_score / self.n_simulations
 
             # 元の状態に戻す
-            self.load_pkl()
-            self.opponent.load_pkl()
+            self.load_pkl(f"data/{self.name}_monte_carlo.pkl")
+            self.opponent.load_pkl(f"data/{self.opponent.name}_monte_carlo.pkl")
 
-        self.delete_pkl()
-        self.opponent.delete_pkl()
-        self.game.set_logger(logging.DEBUG)
+        self.delete_pkl(f"data/{self.name}_monte_carlo.pkl")
+        self.opponent.delete_pkl(f"data/{self.opponent.name}_monte_carlo.pkl")
         return scores
 
     def simulate_game_with_rulebase(self, game: Game, phase: str) -> float:
@@ -184,15 +186,19 @@ class MonteCarloPlayer(Player):
         rulebase_player_opponent = RuleBasePlayer(
             self.opponent.deck, self.opponent.energy_candidates
         )
-        rulebase_player_me.load_pkl(f"data/{self.name}.pkl")
-        rulebase_player_opponent.load_pkl(f"data/{self.opponent.name}.pkl")
+        rulebase_player_me.load_pkl(f"data/{self.name}_monte_carlo.pkl")
+        rulebase_player_opponent.load_pkl(f"data/{self.opponent.name}_monte_carlo.pkl")
+
+        # logger set warn
+        rulebase_player_me.set_logger(logging.WARN)
+        rulebase_player_opponent.set_logger(logging.WARN)
 
         game.replace_player(self, rulebase_player_me)
         game.replace_player(self.opponent, rulebase_player_opponent)
         rulebase_player_me.set_game(game)
         rulebase_player_opponent.set_game(game)
 
-        winner_player = game.simulate_with_rulebase(phase, self.name)
+        winner_player = game.simulate_with_rulebase(phase, rulebase_player_me.name)
         if winner_player is None:
             # 引き分け
             return 0.5

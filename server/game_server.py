@@ -2,6 +2,7 @@ import asyncio
 import logging
 import os
 import sys
+
 # root directoryをsys.pathに追加
 from pathlib import Path
 
@@ -29,14 +30,13 @@ class ConnectionManager:
         self.waiting_players: List[str] = []
         self.active_games: Dict[str, "GameInstance"] = {}
         self.pending_actions: Dict[str, asyncio.Future] = {}
-    
+
     def set_event_loop(self):
         if not hasattr(self, "event_loop"):
             try:
                 self.event_loop = asyncio.get_event_loop()
             except Exception as e:
                 print(str(e))
-
 
     async def request_action(self, client_id: str, selection: Dict[int, str]) -> int:
         """クライアントにアクション選択を要求し、結果を返す
@@ -114,7 +114,6 @@ class ConnectionManager:
             asyncio.create_task(game_instance.send_game_state())
             # 別スレッドでゲームを開始
             self.event_loop.run_in_executor(None, game_instance.start_game)
-
 
     async def send_personal_message(self, message: dict, client_id: str):
         """特定のクライアントにメッセージを送信"""
@@ -245,7 +244,6 @@ class GameInstance:
             # 初期手札を配る
             self.game.start()
 
-
         except Exception as e:
             logger.error(f"Unexpected error during game start: {str(e)}")
             future = asyncio.run_coroutine_threadsafe(
@@ -281,11 +279,17 @@ class GameInstance:
             if self.state:
                 logger.info(f"Sending game state to players in game {self.game_id}")
                 await self.manager.send_personal_message(
-                    {"type": "state_update", "state": self.state.to_dict(self.player1_id)},
+                    {
+                        "type": "state_update",
+                        "state": self.state.to_dict(self.player1_id),
+                    },
                     self.player1_id,
                 )
                 await self.manager.send_personal_message(
-                    {"type": "state_update", "state": self.state.to_dict(self.player2_id)},
+                    {
+                        "type": "state_update",
+                        "state": self.state.to_dict(self.player2_id),
+                    },
                     self.player2_id,
                 )
             await asyncio.sleep(1.0)
@@ -325,7 +329,7 @@ class NetworkPlayer(Player):
                 selected_index = future.result(timeout=30.0)  # 30秒タイムアウト
             except asyncio.TimeoutError:
                 logger.warning(f"Action selection timeout for client {self.client_id}")
-                
+
             except Exception as e:
                 logger.error(f"Error during action selection: {str(e)}")
 
@@ -340,7 +344,6 @@ class NetworkPlayer(Player):
             logger.error(f"Unexpected error in select_action: {str(e)}")
 
 
-
 # FastAPIアプリケーション
 app = FastAPI()
 
@@ -348,6 +351,7 @@ app = FastAPI()
 app.mount("/static", StaticFiles(directory="client", html=True), name="static")
 
 mgr = ConnectionManager()
+
 
 # メインページの提供
 @app.get("/")

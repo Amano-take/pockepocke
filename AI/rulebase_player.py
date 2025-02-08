@@ -3,6 +3,8 @@ import pickle
 import random
 from typing import Callable, Dict
 
+from game.deck import Deck
+from game.energy import Energy
 from game.game import Game
 from game.player import Player
 from game.exceptions import GameOverException
@@ -11,6 +13,10 @@ logger = logging.getLogger(__name__)
 
 
 class RuleBasePlayer(Player):
+    def __init__(self, deck: Deck, energy_candidates: list[Energy]):
+        super().__init__(deck, energy_candidates)
+        self.logger = logging.getLogger(__name__)
+
     def calculate_action_score(self) -> float:
         """
         Calculate the score for the current game state.

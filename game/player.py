@@ -7,6 +7,7 @@ import random
 from collections import defaultdict as ddict
 from itertools import chain, combinations, product
 from typing import Callable
+import uuid
 
 import game.utils
 from game.cards.goods_cards.goods import GoodsCard
@@ -16,11 +17,10 @@ from game.deck import Deck
 from game.energy import Energy
 from game.exceptions import GameOverException
 
-logger = logging.getLogger(__name__)
-
 
 class Player:
     def __init__(self, deck: Deck, energies: list[Energy]):
+        self.id_ = str(uuid.uuid4())
         self.name = "player" + str(random.randint(1, 1000))
         self.deck = deck
         self.energy_candidates = energies
@@ -38,6 +38,10 @@ class Player:
         # ターンを終わったときの処理
         self.processes_at_end_of_turn = []
         self.init_buff()
+        self.logger = logging.getLogger(__name__)
+
+    def __eq__(self, other):
+        return self.id_ == other.id_
 
     def init_buff(self):
         self.attack_buff_value = 0
@@ -54,7 +58,7 @@ class Player:
     def draw(self, number: int = 1):
         for _ in range(number):
             if len(self.deck.cards) == 0:
-                logger.info(f"【{self.name}】デッキが空になりました")
+                self.logger.info(f"【{self.name}】デッキが空になりました")
                 return
             card = self.deck.draw()
             if isinstance(card, PockemonCard):
@@ -65,7 +69,7 @@ class Player:
             elif isinstance(card, TrainerCard):
                 self.hand_trainer.append(card)
                 pass
-        logger.debug(f"【{self.name}】カードを{number}枚ドローしました")
+        self.logger.debug(f"【{self.name}】カードを{number}枚ドローしました")
 
     def prepare_active_pockemon(self, card: PockemonCard):
         self.active_pockemon: PockemonCard = card
@@ -103,14 +107,14 @@ class Player:
         # benchを選ぶ
         self.pockemon_bench_select()
 
-        logger.info(
+        self.logger.info(
             f"【{self.name}】{self.active_pockemon.name}をバトル場に配置しました"
         )
         if self.bench:
-            logger.info(
+            self.logger.info(
                 f"【{self.name}】ベンチに{', '.join([p.name for p in self.bench])}を配置しました"
             )
-        logger.debug(
+        self.logger.debug(
             f"【{self.name}】手札のポケモン: {[p.name for p in self.hand_pockemon]}"
         )
 
@@ -225,7 +229,7 @@ class Player:
             self.active_pockemon,
             card,
         )
-        logger.info(f"【{self.name}】{card.name}をバトル場に移動しました")
+        self.logger.info(f"【{self.name}】{card.name}をバトル場に移動しました")
 
     def retreat_select(self):
         selection = {}
@@ -315,7 +319,7 @@ class Player:
                     hand.hp = hand.max_hp - damage
                     # energyも引き継ぐ
                     hand.energies = card.energies
-                    logger.info(
+                    self.logger.info(
                         f"【{self.name}】バトル場の{card.name}を{hand.name}に進化させました"
                     )
                 else:
@@ -323,7 +327,7 @@ class Player:
                     hand.hp = hand.max_hp - damage
                     # energyも引き継ぐ
                     hand.energies = card.energies
-                    logger.info(
+                    self.logger.info(
                         f"【{self.name}】ベンチの{card.name}を{hand.name}に進化させました"
                     )
                 self.hand_pockemon.remove(hand)
@@ -335,7 +339,7 @@ class Player:
     def attach_energy(self, card: PockemonCard):
         assert self.current_energy
         card.attach_energy(self.current_energy)
-        logger.info(
+        self.logger.info(
             f"【{self.name}】{card.name}に{self.current_energy.name}エネルギーを付与しました"
         )
         self.current_energy = None
@@ -369,7 +373,7 @@ class Player:
 
     def get_energy(self):
         i = random.randint(0, len(self.energy_candidates) - 1)
-        logger.debug(
+        self.logger.debug(
             f"【{self.name}】{self.energy_candidates[i].name}エネルギーを手に入れました"
         )
         self.current_energy = self.energy_candidates[i]
@@ -386,7 +390,7 @@ class Player:
         for card in self.hand_goods:
             if card.name == "MonsterBall":
                 card.use(self.game)
-                logger.info(f"【{self.name}】[goods] {card.name}を使用しました")
+                self.logger.info(f"【{self.name}】[goods] {card.name}を使用しました")
             elif use_list := card.can_use(self.game):
                 # 対象なし
                 if use_list is True:
@@ -442,7 +446,7 @@ class Player:
 
         i = self.select_action(selection, action)
         action[i]()
-        logger.info(
+        self.logger.info(
             f"【{self.name}】{selection[i]}を使用しました"
             if i != 0
             else "グッズカードは使用しませんでした"
@@ -478,7 +482,7 @@ class Player:
             )
 
         i = self.select_action(selection, action)
-        logger.debug(selection[i])
+        self.logger.debug(selection[i])
         action[i]()
 
     def use_pockemon_select(self):
@@ -513,7 +517,7 @@ class Player:
         i = self.select_action(selection, action)
         action[i]()
 
-        logger.info(f"【{self.name}】{selection[i]}を実行しました")
+        self.logger.info(f"【{self.name}】{selection[i]}を実行しました")
 
     def select_bench(self):
         # active_pockemonが倒されたときの処理
@@ -533,7 +537,7 @@ class Player:
         choice = self.select_action(selection, action)
         action[choice]()
 
-        logger.info(
+        self.logger.info(
             f"【{self.name}】{self.active_pockemon.name}をバトル場に配置しました"
         )
 
@@ -545,9 +549,9 @@ class Player:
     ):
         if len(selection) == 1:
             return 0
-        logger.info(f"【{self.name}】アクションを選択してください")
+        self.logger.info(f"【{self.name}】アクションを選択してください")
         for key, value in selection.items():
-            logger.info(f"{key}: {value}")
+            self.logger.info(f"{key}: {value}")
 
         if self.is_random:
             # Return random valid index when in random mode
@@ -558,18 +562,18 @@ class Player:
                 if i in selection:
                     break
                 else:
-                    logger.info("無効な選択です")
+                    self.logger.info("無効な選択です")
         return i
 
     def set_random(self):
         """Enable random action selection mode"""
         self.is_random = True
-        logger.info(f"【{self.name}】ランダムモードを有効化しました")
+        self.logger.info(f"【{self.name}】ランダムモードを有効化しました")
 
     def unset_random(self):
         """Disable random action selection mode"""
         self.is_random = False
-        logger.info(f"【{self.name}】ランダムモードを無効化しました")
+        self.logger.info(f"【{self.name}】ランダムモードを無効化しました")
 
     def save_pkl(self, path=None):
         if path is None:
@@ -591,17 +595,22 @@ class Player:
                     pass
                 elif isinstance(value, Player):
                     pass
+                # ignore logger
+                elif key == "logger":
+                    pass
                 else:
                     setattr(self, key, value)
 
-    def delete_pkl(self):
-        os.remove(f"./data/{self.name}.pkl")
+    def delete_pkl(self, path=None):
+        if path is None:
+            path = f"./data/{self.name}.pkl"
+        os.remove(path)
 
     def __str__(self):
         return self.name
 
     def set_logger(self, loglevel):
-        logger.setLevel(loglevel)
+        self.logger.setLevel(loglevel)
 
 
 if __name__ == "__main__":

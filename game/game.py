@@ -1,3 +1,4 @@
+import logging
 import os
 import pickle
 import uuid
@@ -17,6 +18,7 @@ class Game:
         self.loser: Player | None = None
         self.is_active = True
         self.game_id = str(uuid.uuid4())
+        self.logger = logging.getLogger(__name__)
 
     def set_players(self, player1: Player, player2: Player):
         self.player1 = player1
@@ -53,6 +55,7 @@ class Game:
 
     def turn_start(self):
         while self.turn < self.max_turn:
+            self.logger.info(f"ターン: {self.turn}")
             self.turn += 1
             self.active_player.draw()
             if self.turn > 1:
@@ -231,9 +234,9 @@ class Game:
         self.turn += 1
 
     def replace_player(self, player: Player, new_player: Player):
-        if player is self.player1:
+        if player == self.player1:
             self.player1 = new_player
-        elif player is self.player2:
+        elif player == self.player2:
             self.player2 = new_player
         else:
             raise ValueError("プレイヤーが見つかりません")
