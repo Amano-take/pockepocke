@@ -141,5 +141,18 @@ class Dadarin(PockemonCard):
     attacks = [EnergyWhip()]
 
 
+# 草タイプのポケモンカードリスト
+GRASS_CARDS: list[type[PockemonCard]] = [
+    TamaTama,
+    Nassy,
+    Selevi,
+    Tsutaja,
+    Janobii,
+    Jaroda,
+    Nemashu,
+    Masheedo,
+    Dadarin,
+]
+
 if __name__ == "__main__":
     from game.game import Game

@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>デッキ一覧 - ポケポッケ</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>デッキ一覧</h1>
+        <div class="deck-list">
+            <div class="deck-actions">
+                <button id="create-deck-button" class="main-button">新しいデッキを作成</button>
+                <button id="back-button" class="main-button">戻る</button>
+            </div>
+            <div id="decks-container" class="decks-grid">
+                <!-- デッキがJavaScriptで動的に追加されます -->
+            </div>
+        </div>
+    </div>
+    <script src="/static/js/deck_list.js"></script>
+</body>
+</html>

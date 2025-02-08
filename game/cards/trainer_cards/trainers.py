@@ -1,8 +1,7 @@
 from __future__ import annotations
 
-from game.cards import PockemonCard
+from game.cards.pockemon_card import PockemonCard, PockemonType
 from game.cards.base_card import Card
-from game.cards.pockemon_card import PockemonType
 from game.energy import Energy
 from game.utils import coin_toss
 
@@ -98,6 +97,16 @@ class Leaf(TrainerCard):
         game.active_player.retreat_buff(2)
         super().use(game)
 
+
+# トレーナーカードリスト
+TRAINER_CARDS: list[type[TrainerCard]] = [
+    Erika,
+    Kasumi,
+    HakaseResearcher,
+    Natsume,
+    Sakaki,
+    Leaf,
+]
 
 if __name__ == "__main__":
     from game.game import Game

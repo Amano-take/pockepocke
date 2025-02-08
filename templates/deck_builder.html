@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>デッキ構築 - ポケポッケ</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>デッキ構築</h1>
+        <div class="deck-builder">
+            <div class="card-list">
+                <h2>カード一覧</h2>
+                <div id="available-cards" class="card-grid">
+                    <!-- カードがJavaScriptで動的に追加されます -->
+                </div>
+            </div>
+            <div class="current-deck">
+                <h2>現在のデッキ (<span id="deck-count">0</span>/20)</h2>
+                <div id="selected-cards" class="card-grid">
+                    <!-- 選択されたカードがここに表示されます -->
+                </div>
+                <div class="energy-selection">
+                    <h3>エナジー選択</h3>
+                    <select id="energy-type">
+                        <option value="">選択してください</option>
+                        <option value="grass">草</option>
+                        <option value="fire">炎</option>
+                        <option value="water">水</option>
+                        <option value="lightning">雷</option>
+                        <option value="psychic">超</option>
+                        <option value="fighting">闘</option>
+                    </select>
+                </div>
+                <button id="next-button" class="main-button" disabled>次へ</button>
+            </div>
+        </div>
+    </div>
+    <script src="/static/js/deck_builder.js"></script>
+</body>
+</html>

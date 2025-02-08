@@ -122,5 +122,14 @@ class Dedenne(PockemonCard):
     ]
 
 
+# 雷タイプのポケモンカードリスト
+LIGHTNING_CARDS: list[type[PockemonCard]] = [
+    PikachuEX,
+    ThunderEX,
+    Shimama,
+    Zeburaika,
+    Dedenne,
+]
+
 if __name__ == "__main__":
     from game.game import Game
