@@ -21,6 +21,7 @@ from game.game import Game
 from game.player import Player
 from game.cards import POKEMON_CARDS, GOODS_CARDS, TRAINER_CARDS
 from server.database import save_deck_to_db, get_decks_by_client_id, delete_deck
+from ratings.simulation_manager import simulation_manager
 
 logger = logging.getLogger(__name__)
 
@@ -607,6 +608,20 @@ async def websocket_endpoint(websocket: WebSocket, client_id: str):
             future = mgr.pending_actions.pop(client_id)
             if not future.done():
                 future.cancel()
+
+
+@app.on_event("startup")
+async def startup_event():
+    """サーバー起動時の処理"""
+    # 継続的な評価プロセスを開始
+    await simulation_manager.start_continuous_evaluation()
+
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    """サーバー終了時の処理"""
+    # 評価プロセスを停止
+    await simulation_manager.stop_evaluation()
 
 
 if __name__ == "__main__":

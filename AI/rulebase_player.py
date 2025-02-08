@@ -117,6 +117,9 @@ class RuleBasePlayer(Player):
         self, selection: Dict[int, str], action: Dict[int, Callable]
     ) -> int:
         """RuleBaseによる自動選択"""
+        if len(selection) == 0:
+            return 0  # 選択肢がない場合は0を返す
+
         if len(selection) == 1:
             return 0
 

@@ -13,12 +13,19 @@ class Game:
     max_turn = 30
 
     def __init__(self):
+        self.player1 = None
+        self.player2 = None
+        self.active_player = None
+        self.waiting_player = None
         self.turn = 0
-        self.winner: Player | None = None
-        self.loser: Player | None = None
-        self.is_active = True
+        self.winner = None
+        self.is_active = False
         self.game_id = str(uuid.uuid4())
         self.logger = logging.getLogger(__name__)
+
+    def set_level(self, level: int):
+        """ロガーのログレベルを設定する"""
+        self.logger.setLevel(level)
 
     def set_players(self, player1: Player, player2: Player):
         self.player1 = player1
@@ -33,45 +40,55 @@ class Game:
         self.player2.deck.shuffle()
 
     def start(self):
-        # コイントスで先攻後攻を決める
-        self.is_active = True
-        if random() < 0.5:
-            self.active_player = self.player1
-            self.waiting_player = self.player2
-        else:
-            self.active_player = self.player2
-            self.waiting_player = self.player1
+        try:
+            # コイントスで先攻後攻を決める
+            self.is_active = True
+            if random() < 0.5:
+                self.active_player = self.player1
+                self.waiting_player = self.player2
+            else:
+                self.active_player = self.player2
+                self.waiting_player = self.player1
 
-        # 準備フェーズ
-        self.player1.deck.init_deck()
-        self.player2.deck.init_deck()
-        self.player1.draw(5)
-        self.player2.draw(5)
-        self.player1.prepare()
-        self.player2.prepare()
+            # 準備フェーズ
+            self.player1.deck.init_deck()
+            self.player2.deck.init_deck()
+            self.player1.draw(5)
+            self.player2.draw(5)
+            self.player1.prepare()
+            self.player2.prepare()
 
-        # ターン開始
-        self.turn_start()
+            # ターン開始
+            self.turn_start()
+        except Exception as e:
+            self.logger.error(f"ゲーム開始中にエラーが発生: {str(e)}")
+            self.is_active = False
+            raise
 
     def turn_start(self):
-        while self.turn < self.max_turn:
-            self.logger.info(f"ターン: {self.turn}")
-            self.turn += 1
-            self.active_player.draw()
-            if self.turn > 1:
-                self.active_player.get_energy()
-            can_evolve = self.turn > 2
-            try:
-                self.active_player.start_turn(can_evolve=can_evolve)
-            except GameOverException as e:
-                self.winner = e.winner
-                break
+        try:
+            while self.turn < self.max_turn:
+                self.logger.info(f"ターン: {self.turn}")
+                self.turn += 1
+                self.active_player.draw()
+                if self.turn > 1:
+                    self.active_player.get_energy()
+                can_evolve = self.turn > 2
+                try:
+                    self.active_player.start_turn(can_evolve=can_evolve)
+                except GameOverException as e:
+                    self.winner = e.winner
+                    break
 
-            self.active_player, self.waiting_player = (
-                self.waiting_player,
-                self.active_player,
-            )
-        self.is_active = False
+                self.active_player, self.waiting_player = (
+                    self.waiting_player,
+                    self.active_player,
+                )
+            self.is_active = False
+        except Exception as e:
+            self.logger.error(f"ターン処理中にエラーが発生: {str(e)}")
+            self.is_active = False
+            raise
 
     def get_player_by_name(self, name: str):
         if self.player1.name == name:

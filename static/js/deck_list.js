@@ -60,24 +60,28 @@ function displayDecks(decks) {
 }
 
 function createDeckElement(deck) {
-    const div = document.createElement('div');
-    div.className = 'deck-card';
+    const deckElement = document.createElement('div');
+    deckElement.className = 'deck-item';
 
-    div.innerHTML = `
-        <h3>${deck.name}</h3>
-        <div class="deck-info">
-            <p>カード枚数: ${deck.cards.length}枚</p>
-            <p>エナジータイプ: ${getEnergyTypeJa(deck.energy)}</p>
-            <p>作成日: ${formatDate(deck.created_at)}</p>
+    const ratingColor = getRatingColor(deck.rating);
+
+    deckElement.innerHTML = `
+        <div class="deck-header">
+            <h3>${deck.name}</h3>
+            <div class="deck-rating" style="color: ${ratingColor}">
+                レーティング: ${Math.round(deck.rating)}
+            </div>
+            <div class="deck-stats">
+                戦績: ${deck.wins}勝${deck.games_played - deck.wins}敗
+            </div>
         </div>
-        <div class="deck-actions-buttons">
-            <button class="deck-button edit" onclick="editDeck(${deck.id})">編集</button>
-            <button class="deck-button use" onclick="useDeck(${deck.id})">使用</button>
-            <button class="deck-button delete" onclick="deleteDeck(${deck.id})">削除</button>
+        <div class="deck-actions">
+            <button onclick="useDeck(${deck.id})">使用</button>
+            <button onclick="deleteDeck(${deck.id})">削除</button>
         </div>
     `;
 
-    return div;
+    return deckElement;
 }
 
 function getEnergyTypeJa(energyType) {
@@ -95,6 +99,20 @@ function getEnergyTypeJa(energyType) {
 function formatDate(dateStr) {
     const date = new Date(dateStr);
     return `${date.getFullYear()}/${(date.getMonth() + 1).toString().padStart(2, '0')}/${date.getDate().toString().padStart(2, '0')}`;
+}
+
+function calculateDisplayScore(rating) {
+    const minRating = 1000;
+    const maxRating = 2000;
+    const normalized = (rating - minRating) / (maxRating - minRating);
+    return Math.max(0, Math.min(100, normalized * 100));
+}
+
+function getRatingColor(score) {
+    // 赤から青のグラデーション
+    const red = Math.min(255, Math.round((100 - score) * 2.55));
+    const blue = Math.min(255, Math.round(score * 2.55));
+    return `rgb(${red}, 0, ${blue})`;
 }
 
 async function editDeck(deckId) {

@@ -237,3 +237,15 @@ select {
 .deck-button.use:hover {
     background-color: #27ae60;
 }
+
+.deck-rating {
+    font-weight: bold;
+    font-size: 1.1em;
+    margin-bottom: 5px;
+}
+
+.deck-stats {
+    color: #666;
+    font-size: 1em;
+    font-weight: bold;
+}
