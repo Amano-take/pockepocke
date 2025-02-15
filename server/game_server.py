@@ -624,6 +624,14 @@ async def shutdown_event():
     await simulation_manager.stop_evaluation()
 
 
+@app.get("/game/{game_id}")
+async def get_game(game_id: str, request: Request):
+    """ゲーム画面を提供するエンドポイント"""
+    return templates.TemplateResponse(
+        "game.html", {"request": request, "game_id": game_id}
+    )
+
+
 if __name__ == "__main__":
     import uvicorn
 
