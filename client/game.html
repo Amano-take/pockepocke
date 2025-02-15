@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>ポケポッケ オンライン - ゲーム画面</title>
+    <style>
+        body {
+            font-family: "Helvetica Neue", Arial, sans-serif;
+            max-width: 1200px;
+            margin: 20px auto;
+            padding: 0 20px;
+            background: #f5f5f5;
+        }
+
+        .game-container {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 20px;
+        }
+
+        .game-board {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .game-status {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 20px;
+        }
+
+        .status-bar {
+            margin-bottom: 20px;
+            padding: 10px;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+
+        .connected {
+            background: #e8f5e9;
+            color: #2e7d32;
+        }
+
+        .disconnected {
+            background: #ffebee;
+            color: #c62828;
+        }
+
+        .waiting {
+            background: #fff3e0;
+            color: #ef6c00;
+        }
+
+        .action-button {
+            display: block;
+            width: 100%;
+            margin: 10px 0;
+            padding: 15px;
+            font-size: 16px;
+            border: none;
+            border-radius: 4px;
+            background: #4a90e2;
+            color: white;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .action-button:hover {
+            background: #357abd;
+        }
+
+        .action-button:disabled {
+            background: #cccccc;
+            cursor: not-allowed;
+        }
+
+        .player-info {
+            margin-bottom: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 4px;
+        }
+
+        .player-info.active {
+            background: #e3f2fd;
+            border: 2px solid #2196f3;
+        }
+
+        .pokemon {
+            border: 1px solid #dee2e6;
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 4px;
+        }
+
+        .pokemon .hp {
+            float: right;
+            color: #dc3545;
+        }
+
+        .energies {
+            margin-top: 5px;
+            color: #6c757d;
+        }
+
+        #action-container {
+            margin-top: 20px;
+        }
+
+        .error {
+            color: #c62828;
+            margin: 10px 0;
+            padding: 10px;
+            background: #ffebee;
+            border-radius: 4px;
+        }
+
+        #debug-info {
+            margin-top: 20px;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 12px;
+        }
+
+        .phase-indicator {
+            padding: 5px 10px;
+            border-radius: 4px;
+            background: #e0e0e0;
+            color: #424242;
+            display: inline-block;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div id="status" class="status-bar disconnected">接続中...</div>
+
+    <div class="game-container">
+        <div class="game-board">
+            <div id="opponent-info" class="player-info">
+                <h3>対戦相手</h3>
+                <div>手札: <span id="opponent-hand-size">0</span>枚</div>
+                <div>デッキ: <span id="opponent-deck-size">0</span>枚</div>
+                <div id="opponent-active-pokemon"></div>
+                <div id="opponent-bench"></div>
+            </div>
+
+            <div id="your-info" class="player-info">
+                <h3>あなた</h3>
+                <div>手札: <span id="your-hand-size">0</span>枚</div>
+                <div>デッキ: <span id="your-deck-size">0</span>枚</div>
+                <div id="your-active-pokemon"></div>
+                <div id="your-bench"></div>
+            </div>
+        </div>
+
+        <div class="game-status">
+            <div class="phase-indicator" id="phase-indicator">ゲーム開始前</div>
+            <div>ターン: <span id="turn-counter">0</span></div>
+            <div>行動中のプレイヤー: <span id="active-player">-</span></div>
+            <div id="action-container">
+                <p>選択肢を待っています...</p>
+            </div>
+            <div id="debug-info"></div>
+        </div>
+    </div>
+
+    <script>
+        let socket = null;
+        let clientId = null;
+        let gameState = null;
+        let lastMessage = null;
+        const statusElement = document.getElementById('status');
+        const actionContainer = document.getElementById('action-container');
+        const debugInfo = document.getElementById('debug-info');
+        const phaseIndicator = document.getElementById('phase-indicator');
+
+        function updateStatus(connected, message, type = '') {
+            const className = type || (connected ? 'connected' : 'disconnected');
+            statusElement.className = `status-bar ${className}`;
+            statusElement.textContent = message;
+        }
+
+        function updateGameState(state) {
+            if (!state) {
+                console.error('無効なゲーム状態です');
+                return;
+            }
+
+            gameState = state;
+            console.log('ゲーム状態を更新中:', state);
+
+            try {
+                // ゲーム状態の更新
+                document.getElementById('turn-counter').textContent = state.turn;
+                const activePlayerText = state.active_player === clientId ? 'あなた' : '相手';
+                document.getElementById('active-player').textContent = activePlayerText;
+
+                // 行動中のプレイヤー表示を強調
+                const yourInfo = document.getElementById('your-info');
+                const opponentInfo = document.getElementById('opponent-info');
+                yourInfo.className = `player-info ${state.active_player === clientId ? 'active' : ''}`;
+                opponentInfo.className = `player-info ${state.active_player !== clientId ? 'active' : ''}`;
+
+                // プレイヤー情報の更新
+                document.getElementById('your-hand-size').textContent = state.your_info.hand_size;
+                document.getElementById('your-deck-size').textContent = state.your_info.deck_size;
+
+                document.getElementById('opponent-hand-size').textContent = state.opponent_info.hand_size;
+                document.getElementById('opponent-deck-size').textContent = state.opponent_info.deck_size;
+
+                // アクティブポケモンの更新
+                updatePokemon('your-active-pokemon', state.your_info.active_pokemon);
+                updatePokemon('opponent-active-pokemon', state.opponent_info.active_pokemon);
+
+                // ベンチの更新
+                updateBench('your-bench', state.your_info.bench);
+                updateBench('opponent-bench', state.opponent_info.bench);
+
+                console.log('ゲーム状態の更新が完了しました');
+            } catch (error) {
+                console.error('ゲーム状態の更新中にエラーが発生しました:', error);
+            }
+        }
+
+        function updatePokemon(elementId, pokemon) {
+            const element = document.getElementById(elementId);
+            if (!pokemon) {
+                element.innerHTML = '<div class="pokemon">ポケモンなし</div>';
+                return;
+            }
+
+            element.innerHTML = `
+                <div class="pokemon">
+                    <div>
+                        <span class="name">${pokemon.name}</span>
+                        <span class="hp">${pokemon.hp}/${pokemon.max_hp}</span>
+                    </div>
+                    <div class="energies">
+                        エネルギー: ${pokemon.energies.join(', ') || 'なし'}
+                    </div>
+                </div>
+            `;
+        }
+
+        function updateBench(elementId, pokemons) {
+            const element = document.getElementById(elementId);
+            if (!pokemons || pokemons.length === 0) {
+                element.innerHTML = '<div class="pokemon">ベンチなし</div>';
+                return;
+            }
+
+            element.innerHTML = pokemons.map(pokemon => `
+                <div class="pokemon">
+                    <div>
+                        <span class="name">${pokemon.name}</span>
+                        <span class="hp">${pokemon.hp}/${pokemon.max_hp}</span>
+                    </div>
+                    <div class="energies">
+                        エネルギー: ${pokemon.energies.join(', ') || 'なし'}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function updateDebugInfo() {
+            if (lastMessage) {
+                debugInfo.textContent = JSON.stringify(lastMessage, null, 2);
+            }
+        }
+
+        // WebSocket接続の初期化
+        function initializeWebSocket() {
+            clientId = new URLSearchParams(window.location.search).get('clientId');
+            if (!clientId) {
+                console.error('clientIdが見つかりません');
+                window.location.href = './index.html';
+                return;
+            }
+
+            console.log('WebSocket接続を開始します。clientId:', clientId);
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsUrl = `${protocol}//${window.location.host}/ws/${clientId}`;
+            socket = new WebSocket(wsUrl);
+
+            socket.onopen = () => {
+                console.log('WebSocket接続が確立されました');
+                updateStatus(true, '接続しました');
+                // 接続後、ゲーム状態のリクエストを送信
+                socket.send(JSON.stringify({
+                    type: 'request_game_state',
+                    clientId: clientId
+                }));
+            };
+
+            socket.onclose = () => {
+                console.log('WebSocket接続が切断されました');
+                updateStatus(false, '接続が切断されました - 再接続中...');
+                // 3秒後に再接続を試みる
+                setTimeout(initializeWebSocket, 3000);
+            };
+
+            socket.onerror = (error) => {
+                console.error('WebSocket error:', error);
+                updateStatus(false, 'エラーが発生しました');
+            };
+
+            socket.onmessage = (event) => {
+                const message = JSON.parse(event.data);
+                console.log('受信したメッセージ:', message);
+                lastMessage = message;
+
+                switch (message.type) {
+                    case 'state_update':
+                        console.log('ゲーム状態を更新:', message.state);
+                        updateGameState(message.state);
+                        break;
+                    case 'action_request':
+                        console.log('アクション選択を表示:', message.actions);
+                        displayActionOptions(message.actions);
+                        break;
+                    case 'game_start':
+                        console.log('ゲームが開始されました');
+                        updateStatus(true, 'ゲームが開始されました', 'connected');
+                        break;
+                    case 'game_error':
+                        console.error('ゲームエラー:', message.message);
+                        updateStatus(true, `エラー: ${message.message}`, 'error');
+                        break;
+                    default:
+                        console.log('未知のメッセージタイプを受信:', message);
+                }
+
+                updateDebugInfo();
+            };
+        }
+
+        function displayActionOptions(actions) {
+            actionContainer.innerHTML = '';
+            Object.entries(actions).forEach(([index, action]) => {
+                const button = document.createElement('button');
+                button.className = 'action-button';
+                button.textContent = action;
+                button.onclick = () => sendAction(index);
+                actionContainer.appendChild(button);
+            });
+        }
+
+        function sendAction(index) {
+            if (socket && socket.readyState === WebSocket.OPEN) {
+                console.log('アクション選択を送信:', index);
+                socket.send(JSON.stringify({
+                    type: 'action_response',
+                    selected_index: index,
+                    clientId: clientId
+                }));
+                actionContainer.innerHTML = '<p>選択を送信しました...</p>';
+            } else {
+                console.error('WebSocketが接続されていません');
+                updateStatus(false, '接続が切断されています');
+            }
+        }
+
+        // 初期化
+        initializeWebSocket();
+    </script>
+</body>
+</html>

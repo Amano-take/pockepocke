@@ -362,6 +362,7 @@ mgr = ConnectionManager()
 # メインページの提供
 @app.get("/")
 async def get_index(request: Request):
+    """メインページを提供"""
     return templates.TemplateResponse("index.html", {"request": request})
 
 
@@ -630,6 +631,11 @@ async def get_game(game_id: str, request: Request):
     return templates.TemplateResponse(
         "game.html", {"request": request, "game_id": game_id}
     )
+
+
+@app.get("/play")
+async def get_play(request: Request):
+    return templates.TemplateResponse("play.html", {"request": request})
 
 
 if __name__ == "__main__":
