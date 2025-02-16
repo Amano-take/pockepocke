@@ -234,5 +234,52 @@ def get_all_client_ids() -> List[str]:
         return []
 
 
+def get_all_decks() -> list:
+    """全てのデッキ一覧を取得"""
+    try:
+        conn = sqlite3.connect(DATABASE_PATH)
+        c = conn.cursor()
+
+        c.execute(
+            """
+            SELECT d.id, d.name, d.cards, d.energy, d.created_at, d.client_id,
+                   COALESCE(r.rating, 1500) as rating,
+                   COALESCE(r.games_played, 0) as games_played,
+                   COALESCE(r.wins, 0) as wins,
+                   COALESCE(r.confidence_score, 0) as confidence_score,
+                   COALESCE(r.reference_score, 0) as reference_score,
+                   r.last_updated
+            FROM decks d
+            LEFT JOIN deck_ratings r ON d.id = r.deck_id
+            ORDER BY d.created_at DESC
+            """
+        )
+
+        decks = []
+        for row in c.fetchall():
+            decks.append(
+                {
+                    "id": row[0],
+                    "name": row[1],
+                    "cards": json.loads(row[2]),
+                    "energy": row[3],
+                    "created_at": row[4],
+                    "client_id": row[5],
+                    "rating": row[6],
+                    "games_played": row[7],
+                    "wins": row[8],
+                    "confidence_score": row[9],
+                    "reference_score": row[10],
+                    "last_updated": row[11],
+                }
+            )
+
+        conn.close()
+        return decks
+    except Exception as e:
+        print(f"Error getting all decks from database: {e}")
+        return []
+
+
 # データベースの初期化
 init_db()

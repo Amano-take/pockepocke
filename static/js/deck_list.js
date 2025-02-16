@@ -1,4 +1,4 @@
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
     // クライアントIDの確認と生成
     let clientId = document.cookie.split('; ').find(row => row.startsWith('client_id='));
     if (!clientId) {
@@ -9,6 +9,26 @@ document.addEventListener('DOMContentLoaded', () => {
         console.log('新しいクライアントIDを生成しました:', clientId);
     } else {
         console.log('既存のクライアントID:', clientId.split('=')[1]);
+    }
+
+    // カード一覧を取得
+    try {
+        const response = await fetch('/api/cards', {
+            cache: 'no-store',  // キャッシュを使用しない
+            headers: {
+                'Pragma': 'no-cache',
+                'Cache-Control': 'no-cache'
+            }
+        });
+        if (response.ok) {
+            const cards = await response.json();
+            // カードを種類ごとに分類
+            window.POKEMON_CARDS = cards.filter(card => card.category === 'pokemon').map(card => card.name);
+            window.GOODS_CARDS = cards.filter(card => card.category === 'goods').map(card => card.name);
+            window.TRAINER_CARDS = cards.filter(card => card.category === 'trainer').map(card => card.name);
+        }
+    } catch (error) {
+        console.error('カード一覧の取得に失敗しました:', error);
     }
 
     // デッキ一覧を取得して表示
@@ -28,7 +48,13 @@ document.addEventListener('DOMContentLoaded', () => {
 async function fetchDecks() {
     try {
         console.log('デッキ一覧を取得中...');
-        const response = await fetch('/api/decks');
+        const response = await fetch('/api/decks', {
+            cache: 'no-store',  // キャッシュを使用しない
+            headers: {
+                'Pragma': 'no-cache',
+                'Cache-Control': 'no-cache'
+            }
+        });
         console.log('レスポンスステータス:', response.status);
         if (!response.ok) {
             const errorData = await response.json();
@@ -64,10 +90,14 @@ function createDeckElement(deck) {
     deckElement.className = 'deck-item';
 
     const ratingColor = getRatingColor(deck.rating);
+    const isOwnDeck = deck.client_id === getCookie('client_id');
 
     deckElement.innerHTML = `
         <div class="deck-header">
             <h3>${deck.name}</h3>
+            <div class="deck-creator">
+                作成者: ${deck.client_id.substring(0, 8)}...
+            </div>
             <div class="deck-rating" style="color: ${ratingColor}">
                 レーティング: ${Math.round(deck.rating)}
             </div>
@@ -76,12 +106,20 @@ function createDeckElement(deck) {
             </div>
         </div>
         <div class="deck-actions">
+            <button onclick="showDeckDetails(${JSON.stringify(deck).replace(/"/g, '&quot;')})">詳細</button>
             <button onclick="useDeck(${deck.id})">使用</button>
-            <button onclick="deleteDeck(${deck.id})">削除</button>
+            ${isOwnDeck ? `<button onclick="deleteDeck(${deck.id})">削除</button>` : ''}
         </div>
     `;
 
     return deckElement;
+}
+
+function getCookie(name) {
+    const value = `; ${document.cookie}`;
+    const parts = value.split(`; ${name}=`);
+    if (parts.length === 2) return parts.pop().split(';').shift();
+    return null;
 }
 
 function getEnergyTypeJa(energyType) {
@@ -122,11 +160,15 @@ async function editDeck(deckId) {
 async function useDeck(deckId) {
     try {
         const response = await fetch(`/api/decks/${deckId}/use`, {
-            method: 'POST'
+            method: 'POST',
+            headers: {
+                'Cache-Control': 'no-cache'
+            }
         });
 
         if (response.ok) {
-            window.location.href = '/'; // メイン画面に戻る
+            // マッチング画面に遷移
+            window.location.href = '/play';
         } else {
             const error = await response.json();
             showMessage(`デッキの使用に失敗しました：${error.error}`, true);
@@ -171,4 +213,81 @@ function showMessage(message, isError = false) {
     setTimeout(() => {
         messageDiv.remove();
     }, 5000);
+}
+
+function showDeckDetails(deck) {
+    // モーダルを作成
+    const modal = document.createElement('div');
+    modal.className = 'modal';
+
+    // カードをカテゴリごとに分類
+    const cardsByCategory = categorizeCards(deck.cards);
+
+    modal.innerHTML = `
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>${deck.name}</h2>
+                <span class="close">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="deck-info">
+                    <p>エナジータイプ: ${getEnergyTypeJa(deck.energy)}</p>
+                    <p>総カード枚数: ${deck.cards.length}枚</p>
+                </div>
+                <div class="cards-section">
+                    <h3>ポケモン (${cardsByCategory.pokemon.length}枚)</h3>
+                    <ul>${cardsByCategory.pokemon.map(card => `<li>${card}</li>`).join('')}</ul>
+
+                    <h3>グッズ (${cardsByCategory.goods.length}枚)</h3>
+                    <ul>${cardsByCategory.goods.map(card => `<li>${card}</li>`).join('')}</ul>
+
+                    <h3>トレーナー (${cardsByCategory.trainer.length}枚)</h3>
+                    <ul>${cardsByCategory.trainer.map(card => `<li>${card}</li>`).join('')}</ul>
+                </div>
+            </div>
+        </div>
+    `;
+
+    // モーダルを閉じる処理
+    const closeBtn = modal.querySelector('.close');
+    closeBtn.onclick = () => modal.remove();
+
+    // モーダル外をクリックしても閉じる
+    modal.onclick = (e) => {
+        if (e.target === modal) {
+            modal.remove();
+        }
+    };
+
+    document.body.appendChild(modal);
+}
+
+function categorizeCards(cards) {
+    const categories = {
+        pokemon: [],
+        goods: [],
+        trainer: []
+    };
+
+    // カードの出現回数をカウント
+    const cardCounts = {};
+    cards.forEach(card => {
+        cardCounts[card] = (cardCounts[card] || 0) + 1;
+    });
+
+    // 重複を除外してカードを分類
+    [...new Set(cards)].forEach(card => {
+        const count = cardCounts[card];
+        const cardWithCount = count > 1 ? `${card} ×${count}` : card;
+
+        if (window.POKEMON_CARDS.includes(card)) {
+            categories.pokemon.push(cardWithCount);
+        } else if (window.GOODS_CARDS.includes(card)) {
+            categories.goods.push(cardWithCount);
+        } else if (window.TRAINER_CARDS.includes(card)) {
+            categories.trainer.push(cardWithCount);
+        }
+    });
+
+    return categories;
 }

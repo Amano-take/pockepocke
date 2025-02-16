@@ -20,7 +20,12 @@ from game.energy import Energy
 from game.game import Game
 from game.player import Player
 from game.cards import POKEMON_CARDS, GOODS_CARDS, TRAINER_CARDS
-from server.database import save_deck_to_db, get_decks_by_client_id, delete_deck
+from server.database import (
+    save_deck_to_db,
+    get_decks_by_client_id,
+    delete_deck,
+    get_all_decks,
+)
 from ratings.simulation_manager import simulation_manager
 
 logger = logging.getLogger(__name__)
@@ -102,15 +107,30 @@ class ConnectionManager:
 
     async def match_players(self, client_id: str):
         """プレイヤーのマッチメイキングを行う"""
+        logger.info(f"マッチング開始 - client_id: {client_id}")
+        logger.info(f"現在の待機プレイヤー: {self.waiting_players}")
+        logger.info(f"現在のプレイヤーデッキ状態: {self.player_decks}")
+
         if not self.waiting_players:
             self.waiting_players.append(client_id)
             await self.send_personal_message(
                 {"type": "waiting", "message": "対戦相手を待っています..."}, client_id
             )
+            logger.info(f"待機リストに追加 - client_id: {client_id}")
         else:
             opponent_id = self.waiting_players.pop(0)
+            logger.info(
+                f"マッチング成立 - player1: {opponent_id}, player2: {client_id}"
+            )
+
+            # デッキ選択状態を確認
+            player1_deck = self.player_decks.get(opponent_id)
+            player2_deck = self.player_decks.get(client_id)
+            logger.info(f"プレイヤー1のデッキ: {player1_deck}")
+            logger.info(f"プレイヤー2のデッキ: {player2_deck}")
+
             game_id = str(uuid.uuid4())
-            game_instance = GameInstance(game_id, client_id, opponent_id, self)
+            game_instance = GameInstance(game_id, opponent_id, client_id, self)
             self.active_games[game_id] = game_instance
             # send_game_state()をメインループに登録
             game_instance.game.is_active = True
@@ -201,6 +221,29 @@ class GameState:
         }
 
 
+def create_card_from_name(card_name: str):
+    """カード名からカードオブジェクトを生成する"""
+    # ポケモンカードを検索
+    for card_class in POKEMON_CARDS:
+        card = card_class()
+        if card.name == card_name:
+            return card_class()
+
+    # グッズカードを検索
+    for card_class in GOODS_CARDS:
+        card = card_class()
+        if card.name == card_name:
+            return card_class()
+
+    # トレーナーカードを検索
+    for card_class in TRAINER_CARDS:
+        card = card_class()
+        if card.name == card_name:
+            return card_class()
+
+    raise ValueError(f"カード '{card_name}' が見つかりません")
+
+
 class GameInstance:
     """進行中のゲームインスタンスを管理するクラス"""
 
@@ -232,19 +275,40 @@ class GameInstance:
     def start_game(self):
         """ゲームを開始する"""
         try:
-            # 両プレイヤーにゲーム開始を通知
-            start_message = {
-                "type": "game_start",
-                "game_id": self.game_id,
-                "timestamp": datetime.now().isoformat(),
-            }
-            future = asyncio.run_coroutine_threadsafe(
-                self._broadcast_to_players(start_message), self.manager.event_loop
-            )
-            print("This place ")
-            future.result(timeout=5)  # 5秒タイムアウト
+            # プレイヤーのデッキを設定
+            player1_deck = self.manager.player_decks.get(self.player1_id)
+            player2_deck = self.manager.player_decks.get(self.player2_id)
 
-            # 初期手札を配る
+            logger.info(f"ゲーム開始時のデッキ情報:")
+            logger.info(f"プレイヤー1({self.player1_id}): {player1_deck}")
+            logger.info(f"プレイヤー2({self.player2_id}): {player2_deck}")
+            logger.info(f"全プレイヤーデッキ: {self.manager.player_decks}")
+
+            if not player1_deck or not player2_deck:
+                raise Exception(
+                    f"デッキが選択されていません - player1: {self.player1_id}, player2: {self.player2_id}"
+                )
+
+            # カード名のリストをカードオブジェクトのリストに変換
+            cards1 = [
+                create_card_from_name(card_name) for card_name in player1_deck["cards"]
+            ]
+            cards2 = [
+                create_card_from_name(card_name) for card_name in player2_deck["cards"]
+            ]
+
+            # デッキの設定
+            deck1 = Deck(cards1)
+            deck2 = Deck(cards2)
+            energies1 = [Energy[player1_deck["energy"].upper()]]
+            energies2 = [Energy[player2_deck["energy"].upper()]]
+
+            # プレイヤーの設定
+            player1 = NetworkPlayer(self.player1_id, deck1, energies1, self.manager)
+            player2 = NetworkPlayer(self.player2_id, deck2, energies2, self.manager)
+            self.game.set_players(player1, player2)
+
+            # ゲームを開始
             self.game.start()
 
         except Exception as e:
@@ -481,13 +545,8 @@ async def get_deck_list(request: Request):
 # デッキ一覧の取得API
 @app.get("/api/decks")
 async def get_decks(request: Request):
-    client_id = request.cookies.get("client_id")
-    if not client_id:
-        return JSONResponse(
-            content={"error": "クライアントIDが見つかりません"}, status_code=400
-        )
-
-    decks = get_decks_by_client_id(client_id)
+    # クライアントIDに関係なく、全てのデッキを取得
+    decks = get_all_decks()
     return JSONResponse(content=decks)
 
 
@@ -517,7 +576,8 @@ async def use_deck(deck_id: int, request: Request):
             content={"error": "クライアントIDが見つかりません"}, status_code=400
         )
 
-    decks = get_decks_by_client_id(client_id)
+    # 全てのデッキから検索（他のユーザーのデッキも使用可能）
+    decks = get_all_decks()
     target_deck = next((deck for deck in decks if deck["id"] == deck_id), None)
 
     if not target_deck:
@@ -527,9 +587,15 @@ async def use_deck(deck_id: int, request: Request):
 
     # デッキを使用中に設定
     mgr.player_decks[client_id] = {
+        "id": target_deck["id"],
+        "name": target_deck["name"],
         "cards": target_deck["cards"],
         "energy": target_deck["energy"],
+        "creator_id": target_deck["client_id"],
     }
+
+    logger.info(f"デッキを選択しました - client_id: {client_id}, deck_id: {deck_id}")
+    logger.info(f"現在のプレイヤーデッキ状態: {mgr.player_decks}")
 
     return JSONResponse(content={"status": "success"})
 
@@ -572,12 +638,24 @@ async def save_deck(request: Request):
 # Modify websocket_endpoint to allow dependency injection for testing
 @app.websocket("/ws/{client_id}")
 async def websocket_endpoint(websocket: WebSocket, client_id: str):
+    logger.info(f"WebSocket接続開始 - client_id: {client_id}")
+    logger.info(f"現在のプレイヤーデッキ状態: {mgr.player_decks}")
+
+    # デッキ情報の検証
+    if client_id not in mgr.player_decks:
+        logger.error(f"デッキが選択されていません - client_id: {client_id}")
+        await websocket.close(code=4000, reason="デッキが選択されていません")
+        return
+
     mgr.set_event_loop()
     await mgr.connect(websocket, client_id)
     try:
         await mgr.match_players(client_id)
         while True:
             data = await websocket.receive_json()
+            logger.info(
+                f"WebSocketメッセージ受信 - client_id: {client_id}, data: {data}"
+            )
 
             # アクションレスポンスの処理
             if data["type"] == "action_response":
@@ -603,12 +681,18 @@ async def websocket_endpoint(websocket: WebSocket, client_id: str):
                     if game_instance:
                         await game_instance.handle_action(client_id, data)
     except WebSocketDisconnect:
+        logger.info(f"WebSocket接続切断 - client_id: {client_id}")
         mgr.disconnect(client_id)
         # 切断時に保留中のアクションをキャンセル
         if client_id in mgr.pending_actions:
             future = mgr.pending_actions.pop(client_id)
             if not future.done():
                 future.cancel()
+    except Exception as e:
+        logger.error(
+            f"WebSocket処理中のエラー - client_id: {client_id}, error: {str(e)}"
+        )
+        mgr.disconnect(client_id)
 
 
 @app.on_event("startup")

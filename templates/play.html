@@ -313,9 +313,16 @@
         }
 
         function connectWebSocket() {
-            const sessionId = Math.random().toString(36).substr(2, 9);
+            // cookieからclient_idを取得
+            const clientId = document.cookie.split('; ').find(row => row.startsWith('client_id='))?.split('=')[1];
+            if (!clientId) {
+                console.error('クライアントIDが見つかりません');
+                window.location.href = '/';
+                return;
+            }
+
             try {
-                socket = new WebSocket(`ws://localhost:8080/ws/${sessionId}`);
+                socket = new WebSocket(`ws://localhost:8080/ws/${clientId}`);
 
                 socket.onopen = () => {
                     updateStatus(true, '接続完了');
