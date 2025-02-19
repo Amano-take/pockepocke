@@ -91,12 +91,13 @@ function createDeckElement(deck) {
 
     const ratingColor = getRatingColor(deck.rating);
     const isOwnDeck = deck.client_id === getCookie('client_id');
+    const clientId = deck.client_id ? deck.client_id.substring(0, 8) + '...' : '不明';
 
     deckElement.innerHTML = `
         <div class="deck-header">
             <h3>${deck.name}</h3>
             <div class="deck-creator">
-                作成者: ${deck.client_id.substring(0, 8)}...
+                作成者: ${clientId}
             </div>
             <div class="deck-rating" style="color: ${ratingColor}">
                 レーティング: ${Math.round(deck.rating)}
